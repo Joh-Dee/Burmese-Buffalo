@@ -4,7 +4,7 @@ const SYMBOLS = [
     { id: 'lion', label: '😄', color: 'lion', value: 8 },
     { id: 'elephant', label: '😇', color: 'elephant', value: 7 },
     { id: 'deer', label: '😙', color: 'deer', value: 5 },
-    { id: 'zebra', label: '😋', color: 'zebra', value: 4 },
+    { id: 'zebra', label: '😎', color: 'zebra', value: 4 },
     { id: 'A', label: 'A', color: 'card', value: 3 },
     { id: 'K', label: 'K', color: 'card', value: 3 },
     { id: 'Q', label: 'Q', color: 'card', value: 2 },
@@ -41,7 +41,10 @@ function generateGrid() {
 }
 
 function renderGrid(highlighted = []) {
+    // 1. Clear existing content
     gridElement.innerHTML = '';
+
+    // 2. Create cells Row by Row (for correct grid display)
     for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < REELS; col++) {
             const cell = document.createElement('div');
@@ -49,6 +52,8 @@ function renderGrid(highlighted = []) {
             const sym = grid[col][row];
             cell.textContent = sym.label;
             cell.classList.add(sym.color);
+            
+            // Highlight winning symbols
             if (highlighted.some(h => h.col === col && h.row === row)) {
                 cell.classList.add('highlight');
             }
@@ -78,7 +83,7 @@ function calculateWin() {
                 count++;
                 positions.push(...rowPos);
             } else {
-                break;
+                break; // Stop if a reel doesn't have this symbol
             }
         }
 
@@ -114,7 +119,8 @@ function spin() {
         if (spinCount >= 3) {
             clearInterval(spinInterval);
             const result = calculateWin();
-            renderGrid(result.highlighted);
+            renderGrid(result.highlighted); // ဒီမှာ Highlight တွေပါ ပြပေးမယ်
+            
             if (result.totalWin > 0) {
                 credit += result.totalWin;
                 creditDisplay.textContent = credit;
