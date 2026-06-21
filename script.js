@@ -13,6 +13,8 @@ const SYMBOLS = [
 ];
 
 const REELS = 5, ROWS = 4;
+const TALL_ROWS = 15; // သင်ပြောတဲ့အတိုင်း ၁၅ ခု
+
 let grid = [];
 let credit = 2000, isSpinning = false;
 const BET = 10;
@@ -32,17 +34,21 @@ function generateGrid() {
     }
 }
 
+// ----- FINAL RESULT RENDER (4 Rows) -----
 function renderGrid(highlighted = []) {
     gridElement.innerHTML = '';
-    for (let row = 0; row < ROWS; row++) {
-        for (let col = 0; col < REELS; col++) {
+    for (let col = 0; col < REELS; col++) {
+        const colDiv = document.createElement('div');
+        colDiv.className = 'reel-column';
+        for (let row = 0; row < ROWS; row++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
             const sym = grid[col][row];
             cell.style.backgroundImage = `url('images/${IMAGE_MAP[sym.id]}')`;
             if (highlighted.some(h => h.col === col && h.row === row)) cell.classList.add('highlight');
-            gridElement.appendChild(cell);
+            colDiv.appendChild(cell);
         }
+        gridElement.appendChild(colDiv);
     }
 }
 
@@ -65,7 +71,7 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
-// ----- ROLLING ANIMATION (အပေါ်ကနေ အောက်ကို ကျလာတာ) -----
+// ----- SPIN (True Rolling) -----
 function spin() {
     if (isSpinning || credit < BET) { 
         if(credit < BET) alert('Credit မလုံလောက်ပါ!'); 
@@ -75,57 +81,59 @@ function spin() {
     isSpinning = true; spinBtn.disabled = true;
     credit -= BET; creditDisplay.textContent = credit; winDisplay.textContent = '0';
 
-    // 1. Generate the final grid first
+    // 1. Generate final result for logic
     generateGrid();
 
-    // 2. Create the "Tall Reel" for animation
+    // 2. Build Tall Columns (15 symbols)
     gridElement.innerHTML = '';
-    
-    // Create 5 columns (Reels)
+    let stopIndices = [];
+
     for (let col = 0; col < REELS; col++) {
-        const columnDiv = document.createElement('div');
-        columnDiv.className = 'reel-col';
-        columnDiv.style.cssText = `
-            display: flex; flex-direction: column; width: 100%; gap: 6px;
-            position: relative;
-        `;
+        const colDiv = document.createElement('div');
+        colDiv.className = 'reel-column';
         
-        // Create 15 cells tall for smooth scrolling
-        for (let i = 0; i < 15; i++) {
+        let tallSymbols = [];
+        for (let i = 0; i < TALL_ROWS; i++) tallSymbols.push(randomSymbol());
+
+        // Random stop position (ensure 4 visible rows remain)
+        const stopIdx = Math.floor(Math.random() * (TALL_ROWS - ROWS + 1));
+        stopIndices.push(stopIdx);
+
+        // Create cells
+        tallSymbols.forEach(sym => {
             const cell = document.createElement('div');
             cell.className = 'cell';
-            const sym = randomSymbol();
             cell.style.backgroundImage = `url('images/${IMAGE_MAP[sym.id]}')`;
-            columnDiv.appendChild(cell);
-        }
+            colDiv.appendChild(cell);
+        });
 
-        // Calculate random stop offset (0 to 10, so 4 rows remain visible at bottom)
-        const stopIndex = Math.floor(Math.random() * 11);
-        // Move UP by 100% * stopIndex so it slides DOWN to reveal final rows
-        columnDiv.style.transform = `translateY(-${stopIndex * 100}%)`;
-        columnDiv.style.transition = 'none';
-        
-        gridElement.appendChild(columnDiv);
+        // Move column UP by (stopIdx * (100/ROWS)%) 
+        // since 4 rows = 100% height, each row is 25%
+        const offsetPercent = - (stopIdx * 25);
+        colDiv.style.transform = `translateY(${offsetPercent}%)`;
+        colDiv.style.transition = 'none';
+
+        gridElement.appendChild(colDiv);
     }
 
-    // Force reflow
+    // Force reflow to set initial state
     gridElement.offsetHeight;
 
-    // Start animation: Reel 1 -> Reel 5 sequentially
+    // 3. Animate columns 1 to 5 sequentially (Ease-out)
     let currentReel = 0;
-    const columns = gridElement.querySelectorAll('.reel-col');
+    const columns = gridElement.querySelectorAll('.reel-column');
     
     const animInterval = setInterval(() => {
         const col = columns[currentReel];
-        // Ease-out: Starts fast, slows down at the end
-        col.style.transition = 'transform 0.6s cubic-bezier(0.15, 0.9, 0.3, 1)';
-        col.style.transform = 'translateY(0)'; // Slide down to final position
+        // Ease-out cubic-bezier
+        col.style.transition = 'transform 0.7s cubic-bezier(0.15, 0.9, 0.3, 1)';
+        col.style.transform = 'translateY(0)'; // Slide DOWN to final position
 
         currentReel++;
         if (currentReel >= REELS) {
             clearInterval(animInterval);
             
-            // Wait for animation to finish, then show final grid with highlights
+            // 4. After animation, show final 4-row grid with highlights
             setTimeout(() => {
                 const result = calculateWin();
                 renderGrid(result.highlighted);
@@ -134,9 +142,9 @@ function spin() {
                     credit += result.totalWin; creditDisplay.textContent = credit; winDisplay.textContent = result.totalWin;
                 }
                 isSpinning = false; spinBtn.disabled = false;
-            }, 700);
+            }, 800); // Wait for animation to fully stop
         }
-    }, 400);
+    }, 450); // 0.45s delay between reels
 }
 
 // Initial Render
