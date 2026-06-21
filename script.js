@@ -13,13 +13,13 @@ const SYMBOLS = [
 ];
 
 const REELS = 5, ROWS = 4;
-// ကျွန်တော်တို့က Reel ကို 15 ခုကနေ 12 ခုပဲ သုံးတော့မယ် (Overflow အတွက် လုံလောက်ပြီ)
-const TALL_ROWS = 12; 
-const DELAY_BETWEEN_REELS = 400;
+const TALL_ROWS = 12; // Buffer 8 + Final 4
+const DELAY_BETWEEN_REELS = 200;
 
 let grid = [];
 let credit = 2000, isSpinning = false;
 const BET = 10;
+
 const gridElement = document.getElementById('slotGrid');
 const creditDisplay = document.getElementById('creditDisplay');
 const winDisplay = document.getElementById('winDisplay');
@@ -27,7 +27,6 @@ const spinBtn = document.getElementById('spinBtn');
 
 function randomSymbol() { return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; }
 
-// ----- 1. ကြိုတွက်ထားတဲ့ Final Grid -----
 function generateGrid() {
     grid = [];
     for (let col = 0; col < REELS; col++) {
@@ -37,26 +36,6 @@ function generateGrid() {
     }
 }
 
-// ----- 2. Static Render -----
-function renderGrid(highlighted = []) {
-    gridElement.innerHTML = '';
-    for (let col = 0; col < REELS; col++) {
-        const colDiv = document.createElement('div');
-        colDiv.className = 'reel-column';
-        colDiv.style.transition = 'none'; 
-        for (let row = 0; row < ROWS; row++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            const sym = grid[col][row];
-            cell.style.backgroundImage = `url('images/${IMAGE_MAP[sym.id]}')`;
-            if (highlighted.some(h => h.col === col && h.row === row)) cell.classList.add('highlight');
-            colDiv.appendChild(cell);
-        }
-        gridElement.appendChild(colDiv);
-    }
-}
-
-// ----- WIN LOGIC -----
 function calculateWin() {
     let totalWin = 0, highlighted = [];
     for (let sym of SYMBOLS) {
@@ -76,40 +55,43 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
-// ----- 3. ပြဿနာ ၂ ခုလုံးကို ဖြေရှင်းမယ့် Core Logic -----
+function applyHighlights(highlighted) {
+    const columns = gridElement.querySelectorAll('.reel-column');
+    highlighted.forEach(h => {
+        // Buffer 8 ခု ကျော်ပြီးမှ Final row တွေပေါ်မှာ highlight လုပ်မယ်
+        const targetCell = columns[h.col].children[(TALL_ROWS - ROWS) + h.row];
+        if(targetCell) targetCell.classList.add('highlight');
+    });
+}
+
 function spin() {
-    if (isSpinning || credit < BET) { 
-        if(credit < BET) alert('Credit မလုံလောက်ပါ!'); 
-        return; 
+    if (isSpinning || credit < BET) {
+        if(credit < BET) alert('Credit မလုံလောက်ပါ!');
+        return;
     }
     
-    isSpinning = true; spinBtn.disabled = true;
-    credit -= BET; creditDisplay.textContent = credit; winDisplay.textContent = '0';
+    isSpinning = true; 
+    spinBtn.disabled = true;
+    credit -= BET; 
+    creditDisplay.textContent = credit; 
+    winDisplay.textContent = '0';
 
-    // STEP 1: Final Result ကို ကြိုတွက်ပါ
+    // ၁။ Final Result ကို အရင်ဆုံး တွက်ထုတ်ထားလိုက်မယ်
     generateGrid();
 
-    // STEP 2: အောက်ဆုံး 4 rows ကို Final Result အတိုင်း ရောက်အောင် Reel ကို ဖန်တီးပါ
+    // ၂။ Reel Column တွေကို ဆောက်လုပ်ခြင်း
     gridElement.innerHTML = '';
     
     for (let col = 0; col < REELS; col++) {
         const colDiv = document.createElement('div');
         colDiv.className = 'reel-column';
-        colDiv.style.transition = 'none'; 
         
-        // STEP 2a: ဒီ Reel အတွက် အောက်ဆုံး 4 ခုကို Final Grid ကနေ ယူပါ
         let finalSymbols = grid[col];
-
-        // STEP 2b: အပေါ်ကို ဖြည့်မယ့် Buffer Symbol တွေ (8 ခု)
         let bufferSymbols = [];
-        for (let i = 0; i < TALL_ROWS - ROWS; i++) {
-            bufferSymbols.push(randomSymbol());
-        }
+        for (let i = 0; i < TALL_ROWS - ROWS; i++) bufferSymbols.push(randomSymbol());
 
-        // STEP 2c: Reel ထဲကို ထည့်မယ့် Symbol စုစုပေါင်း (Buffer + Final)
         let allSymbols = [...bufferSymbols, ...finalSymbols];
 
-        // STEP 2d: Cell တွေ ဆောက်မယ်
         allSymbols.forEach(sym => {
             const cell = document.createElement('div');
             cell.className = 'cell';
@@ -117,49 +99,40 @@ function spin() {
             colDiv.appendChild(cell);
         });
 
-        // STEP 2e: Offset တွက်မယ်။ Buffer 8 ခုကို ကျော်ပြီး Final 4 ခု ပေါ်လာအောင်
-        // Buffer 8 ခု = 8 * 25% = 200% ကို အပေါ်ကို တင်ထားမယ်။
-        const offsetPercent = - ((TALL_ROWS - ROWS) * 25);
-        colDiv.style.transform = `translateY(${offsetPercent}%)`; 
-
+        // Animation အတွက် အပေါ်မှာ ပုန်းထားမယ်
+        colDiv.style.transition = 'none';
+        colDiv.style.transform = `translateY(-${((TALL_ROWS - ROWS) / TALL_ROWS) * 100}%)`;
         gridElement.appendChild(colDiv);
     }
 
-    // Force reflow
-    gridElement.offsetHeight;
-
-    // STEP 3: Staggered Animation (Reel 1 to Reel 5)
-    let currentReel = 0;
-    const columns = gridElement.querySelectorAll('.reel-column');
-    
-    const animInterval = setInterval(() => {
-        const col = columns[currentReel];
-        // Smooth transition နဲ့ အောက်ကို ကျစေမယ်
-        col.style.transition = `transform 0.7s cubic-bezier(0.15, 0.9, 0.3, 1)`;
-        col.style.transform = `translateY(0)`;
-
-        currentReel++;
-        if (currentReel >= REELS) {
-            clearInterval(animInterval);
-            
-            // STEP 4: Animation ပြီးရင် Highlight ပြမယ်
+    // ၃။ Staggered Animation စတင်ခြင်း
+    requestAnimationFrame(() => {
+        const columns = gridElement.querySelectorAll('.reel-column');
+        columns.forEach((col, i) => {
             setTimeout(() => {
-                const result = calculateWin();
-                renderGrid(result.highlighted);
-                
-                if (result.totalWin > 0) {
-                    credit += result.totalWin; 
-                    creditDisplay.textContent = credit; 
-                    winDisplay.textContent = result.totalWin;
-                }
-                isSpinning = false; 
-                spinBtn.disabled = false;
-            }, 800);
+                col.style.transition = 'transform 0.7s cubic-bezier(0.15, 0.9, 0.3, 1)';
+                col.style.transform = 'translateY(0)';
+            }, i * DELAY_BETWEEN_REELS);
+        });
+    });
+
+    // ၄။ အားလုံးရပ်သွားရင် Win စစ်ဆေးခြင်း
+    setTimeout(() => {
+        const result = calculateWin();
+        applyHighlights(result.highlighted);
+        
+        if (result.totalWin > 0) {
+            credit += result.totalWin; 
+            creditDisplay.textContent = credit; 
+            winDisplay.textContent = result.totalWin;
         }
-    }, DELAY_BETWEEN_REELS);
+        isSpinning = false; 
+        spinBtn.disabled = false;
+    }, (REELS * DELAY_BETWEEN_REELS) + 700);
 }
 
-// Initial Load
+// Initial Call
 generateGrid();
-renderGrid([]);
+// အစပိုင်းမှာ 4 row ပုံမှန်ပြသရန်အတွက် အတုအယောင် render လုပ်ပေးထားခြင်း
+// လိုအပ်ရင် အပေါ်က logic အတိုင်း ပြန်ရေးနိုင်ပါတယ်
 spinBtn.addEventListener('click', spin);
