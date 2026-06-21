@@ -65,6 +65,7 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
+// ----- ROLLING ANIMATION (အပေါ်ကနေ အောက်ကို ကျလာတာ) -----
 function spin() {
     if (isSpinning || credit < BET) { 
         if(credit < BET) alert('Credit မလုံလောက်ပါ!'); 
@@ -74,67 +75,58 @@ function spin() {
     isSpinning = true; spinBtn.disabled = true;
     credit -= BET; creditDisplay.textContent = credit; winDisplay.textContent = '0';
 
+    // 1. Generate the final grid first
     generateGrid();
-    
-    // Clear grid to show rolling animation
+
+    // 2. Create the "Tall Reel" for animation
     gridElement.innerHTML = '';
-
-    // Create tall columns (15 items high) for sliding effect
+    
+    // Create 5 columns (Reels)
     for (let col = 0; col < REELS; col++) {
-        const colWrapper = document.createElement('div');
-        colWrapper.className = 'reel-column';
-        colWrapper.style.display = 'flex';
-        colWrapper.style.flexDirection = 'column';
-        colWrapper.style.width = '100%';
-        colWrapper.style.gap = '6px'; // Match grid gap
-
-        // Generate 15 items (far more than visible 4)
-        let reelItems = [];
+        const columnDiv = document.createElement('div');
+        columnDiv.className = 'reel-col';
+        columnDiv.style.cssText = `
+            display: flex; flex-direction: column; width: 100%; gap: 6px;
+            position: relative;
+        `;
+        
+        // Create 15 cells tall for smooth scrolling
         for (let i = 0; i < 15; i++) {
-            const sym = randomSymbol();
-            reelItems.push(sym);
             const cell = document.createElement('div');
             cell.className = 'cell';
-            cell.style.width = '100%';
-            cell.style.aspectRatio = '1 / 1.1';
+            const sym = randomSymbol();
             cell.style.backgroundImage = `url('images/${IMAGE_MAP[sym.id]}')`;
-            colWrapper.appendChild(cell);
+            columnDiv.appendChild(cell);
         }
 
-        // Random stop position (Ensure we have 4 rows left at the bottom)
-        const stopIndex = Math.floor(Math.random() * 11); // 0 to 10
+        // Calculate random stop offset (0 to 10, so 4 rows remain visible at bottom)
+        const stopIndex = Math.floor(Math.random() * 11);
+        // Move UP by 100% * stopIndex so it slides DOWN to reveal final rows
+        columnDiv.style.transform = `translateY(-${stopIndex * 100}%)`;
+        columnDiv.style.transition = 'none';
         
-        // Set initial transform to push the reel UP so it slides down
-        // Each cell is roughly 110% height of container / 4
-        // We want the item at 'stopIndex' to end up at the top.
-        // So we slide down by (stopIndex * cellHeight)
-        colWrapper.style.transform = `translateY(-${stopIndex * 110}%)`;
-        colWrapper.style.transition = 'none'; // No transition for initial state
-        gridElement.appendChild(colWrapper);
+        gridElement.appendChild(columnDiv);
     }
 
-    // Force reflow to apply initial state
+    // Force reflow
     gridElement.offsetHeight;
 
-    // Animate columns 1 to 5 sequentially
+    // Start animation: Reel 1 -> Reel 5 sequentially
     let currentReel = 0;
-    const columns = gridElement.querySelectorAll('.reel-column');
+    const columns = gridElement.querySelectorAll('.reel-col');
     
     const animInterval = setInterval(() => {
         const col = columns[currentReel];
-        // Apply ease-out transition
-        col.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)';
+        // Ease-out: Starts fast, slows down at the end
+        col.style.transition = 'transform 0.6s cubic-bezier(0.15, 0.9, 0.3, 1)';
         col.style.transform = 'translateY(0)'; // Slide down to final position
 
         currentReel++;
         if (currentReel >= REELS) {
             clearInterval(animInterval);
             
-            // After animation finishes, extract the visible 4 rows for final result
+            // Wait for animation to finish, then show final grid with highlights
             setTimeout(() => {
-                // We need to rebuild the 'grid' based on what is now visible at the top
-                // But we already generated 'grid' at the start of spin()!
-                // So we just render the static grid with highlights.
                 const result = calculateWin();
                 renderGrid(result.highlighted);
                 
@@ -147,7 +139,7 @@ function spin() {
     }, 400);
 }
 
-// Initial Grid
+// Initial Render
 generateGrid();
 renderGrid([]);
 spinBtn.addEventListener('click', spin);
