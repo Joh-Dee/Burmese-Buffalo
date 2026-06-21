@@ -43,7 +43,7 @@ body {
 .stats { display: flex; gap: 20px; color: #ffd700; font-weight: bold; font-size: 14px; }
 .stats span { color: #fff; }
 
-/* REELS WRAPPER - ဒီမှာ သေချာ HIDE လုပ်မယ် */
+/* ------- REELS FIX (MASKING) ------- */
 .reels-wrapper {
     position: relative;
     background: linear-gradient(180deg, #1c0f00, #442200);
@@ -51,11 +51,11 @@ body {
     border: 2px solid #b8860b;
     box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
     padding: 8px;
-    overflow: hidden; /* အရေးအကြီးဆုံး - ပိုလျှံတာတွေကို ဖုံးမယ် */
+    overflow: hidden;
     height: auto;
 }
 
-/* SLOT GRID - Flexbox နဲ့ ပြောင်းလိုက်ပြီ (Grid မဟုတ်တော့ဘူး) */
+/* Height = (4 rows * cell-height) + (3 gaps) */
 .slot-grid {
     display: flex;
     flex-direction: row;
@@ -65,25 +65,25 @@ body {
     padding: 8px;
     border-radius: 10px;
     border: 1px solid #cc9900;
-    /* Height ကို row 4 ခု + gap 3 ခုအတိုင်း တွက်မယ် */
-    height: calc((var(--cell-height) * 4) + (8px * 3)); 
+    overflow: hidden; /* CRITICAL: Hides overflows */
+    /* Fixed Height for exactly 4 rows */
+    height: calc((var(--cell-height, 0px) * 4) + (8px * 3)); 
+    /* Note: --cell-height is dynamically calculated by JS below */
 }
 
-/* COLUMN (Reel) - Column တစ်ခုချင်းစီ */
 .reel-column {
     display: flex;
     flex-direction: column;
     gap: 8px;
     width: 100%;
-    height: 100%;
-    overflow: hidden; /* Column အလွှားတွေ ပြင်မထွက်အောင် */
+    height: 100%; /* Matches the slot-grid height */
+    overflow: hidden;
     position: relative;
 }
 
-/* CELL */
 .cell {
     width: 100%;
-    aspect-ratio: 1 / 1.1; /* အပေါ်အောက် အချိုး ထိန်းမယ် */
+    aspect-ratio: 1 / 1.1;
     background-color: #fdf5e6;
     border-radius: 6px;
     display: flex;
@@ -94,10 +94,9 @@ body {
     background-position: center center;
     background-repeat: no-repeat;
     background-size: contain; 
-    flex-shrink: 0; /* Cell က မပြုတ်အောင် */
+    flex-shrink: 0;
 }
 
-/* Highlight */
 .cell.highlight {
     border: 4px solid #ffd700;
     box-shadow: 0 0 20px #ffd700, inset 0 0 15px #ffcc00;
@@ -106,7 +105,6 @@ body {
     z-index: 5;
 }
 
-/* CONTROLS */
 .controls {
     display: flex;
     justify-content: space-between;
@@ -145,12 +143,12 @@ body {
 }
 .info-panel .badge { background: #d4af37; color: #000; padding: 2px 10px; border-radius: 20px; }
 
-/* Mobile Responsive */
+/* Mobile Fix */
 @media (orientation: landscape) and (max-height: 500px) {
     .game-container { padding: 6px; max-width: 95vw; transform: rotateX(1deg); }
     .header { padding: 4px 10px; font-size: 12px; }
     .stats { gap: 10px; font-size: 12px; }
-    .slot-grid { gap: 4px; padding: 4px; height: calc((var(--cell-height) * 4) + (4px * 3)); }
+    .slot-grid { gap: 4px; padding: 4px; height: calc((var(--cell-height, 0px) * 4) + (4px * 3)); }
     .reel-column { gap: 4px; }
     .cell { border-width: 1px; border-radius: 4px; }
     .spin-btn { font-size: 16px; padding: 8px 0; }
