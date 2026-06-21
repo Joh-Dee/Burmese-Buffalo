@@ -29,7 +29,6 @@ body {
     transform: rotateX(2deg);
 }
 
-/* HEADER */
 .header {
     display: flex;
     justify-content: space-between;
@@ -44,31 +43,47 @@ body {
 .stats { display: flex; gap: 20px; color: #ffd700; font-weight: bold; font-size: 14px; }
 .stats span { color: #fff; }
 
-/* REELS WRAPPER - Absolute Position သုံးပြီး ဖုံးမယ် */
+/* REELS WRAPPER - ဒီမှာ သေချာ HIDE လုပ်မယ် */
 .reels-wrapper {
     position: relative;
     background: linear-gradient(180deg, #1c0f00, #442200);
     border-radius: 15px;
     border: 2px solid #b8860b;
-    padding: 0;
     box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
-    overflow: hidden; /* ဒါက Grid ကို သေချာဖုံးပေးမယ် */
+    padding: 8px;
+    overflow: hidden; /* အရေးအကြီးဆုံး - ပိုလျှံတာတွေကို ဖုံးမယ် */
+    height: auto;
 }
 
+/* SLOT GRID - Flexbox နဲ့ ပြောင်းလိုက်ပြီ (Grid မဟုတ်တော့ဘူး) */
 .slot-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 6px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
     background: #fcebc7;
-    padding: 6px;
+    padding: 8px;
     border-radius: 10px;
     border: 1px solid #cc9900;
+    /* Height ကို row 4 ခု + gap 3 ခုအတိုင်း တွက်မယ် */
+    height: calc((var(--cell-height) * 4) + (8px * 3)); 
+}
+
+/* COLUMN (Reel) - Column တစ်ခုချင်းစီ */
+.reel-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* Column အလွှားတွေ ပြင်မထွက်အောင် */
     position: relative;
 }
 
-/* CELL - အတန်း ၄ ခုပဲ ပြတဲ့ပုံစံ */
+/* CELL */
 .cell {
-    aspect-ratio: 1 / 1.1;
+    width: 100%;
+    aspect-ratio: 1 / 1.1; /* အပေါ်အောက် အချိုး ထိန်းမယ် */
     background-color: #fdf5e6;
     border-radius: 6px;
     display: flex;
@@ -79,9 +94,10 @@ body {
     background-position: center center;
     background-repeat: no-repeat;
     background-size: contain; 
-    width: 100%;
+    flex-shrink: 0; /* Cell က မပြုတ်အောင် */
 }
 
+/* Highlight */
 .cell.highlight {
     border: 4px solid #ffd700;
     box-shadow: 0 0 20px #ffd700, inset 0 0 15px #ffcc00;
@@ -134,7 +150,8 @@ body {
     .game-container { padding: 6px; max-width: 95vw; transform: rotateX(1deg); }
     .header { padding: 4px 10px; font-size: 12px; }
     .stats { gap: 10px; font-size: 12px; }
-    .slot-grid { gap: 4px; padding: 4px; }
+    .slot-grid { gap: 4px; padding: 4px; height: calc((var(--cell-height) * 4) + (4px * 3)); }
+    .reel-column { gap: 4px; }
     .cell { border-width: 1px; border-radius: 4px; }
     .spin-btn { font-size: 16px; padding: 8px 0; }
     .info-panel { font-size: 11px; padding: 4px 8px; }
