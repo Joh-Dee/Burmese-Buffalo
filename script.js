@@ -14,7 +14,6 @@ const SYMBOLS = [
 
 const REELS = 5, ROWS = 4;
 const TALL_ROWS = 15;
-const GAP = 8; // CSS က gap နဲ့ တူရမယ်
 
 let grid = [];
 let credit = 2000, isSpinning = false;
@@ -24,7 +23,6 @@ const creditDisplay = document.getElementById('creditDisplay');
 const winDisplay = document.getElementById('winDisplay');
 const spinBtn = document.getElementById('spinBtn');
 
-// ----- HELPERS -----
 function randomSymbol() { return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; }
 
 function generateGrid() {
@@ -36,27 +34,13 @@ function generateGrid() {
     }
 }
 
-// ----- INIT: ဂိမ်းစဖွင့်ကတည်းက cell height ကို သတ်မှတ်မယ် -----
-function initGame() {
-    // 1. Create a temporary cell to measure height
-    const tempCell = document.createElement('div');
-    tempCell.className = 'cell';
-    tempCell.style.visibility = 'hidden';
-    document.body.appendChild(tempCell);
-    const cellHeight = tempCell.offsetHeight;
-    document.body.removeChild(tempCell);
-
-    // 2. Set the CSS variable globally so it works BEFORE spin
-    gridElement.style.setProperty('--cell-height', cellHeight + 'px');
-}
-
-// ----- FINAL RENDER (4 rows only) -----
+// FINAL RENDER (4 rows only)
 function renderGrid(highlighted = []) {
     gridElement.innerHTML = '';
     for (let col = 0; col < REELS; col++) {
         const colDiv = document.createElement('div');
         colDiv.className = 'reel-column';
-        colDiv.style.transition = 'none'; // Remove transition for static display
+        colDiv.style.transition = 'none'; 
         for (let row = 0; row < ROWS; row++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
@@ -69,7 +53,6 @@ function renderGrid(highlighted = []) {
     }
 }
 
-// ----- WIN LOGIC -----
 function calculateWin() {
     let totalWin = 0, highlighted = [];
     for (let sym of SYMBOLS) {
@@ -89,7 +72,7 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
-// ----- SPIN (Animation Logic) -----
+// SPIN (Animation Logic)
 function spin() {
     if (isSpinning || credit < BET) { 
         if(credit < BET) alert('Credit မလုံလောက်ပါ!'); 
@@ -99,22 +82,21 @@ function spin() {
     isSpinning = true; spinBtn.disabled = true;
     credit -= BET; creditDisplay.textContent = credit; winDisplay.textContent = '0';
 
-    // 1. Generate final result first (for logic)
     generateGrid();
 
-    // 2. Build Tall Columns (15 symbols) for animation
+    // 1. Build Tall Columns (15 symbols) for animation
     gridElement.innerHTML = '';
     let stopIndices = [];
 
     for (let col = 0; col < REELS; col++) {
         const colDiv = document.createElement('div');
         colDiv.className = 'reel-column';
-        colDiv.style.transition = 'none'; // Remove transition initially
+        colDiv.style.transition = 'none'; // Initially no transition
         
         let tallSymbols = [];
         for (let i = 0; i < TALL_ROWS; i++) tallSymbols.push(randomSymbol());
 
-        // stopIdx က 0 ကနေ 11 ထိပဲရှိမယ် (15-4 = 11)
+        // Random stop index (0 to 11)
         const stopIdx = Math.floor(Math.random() * (TALL_ROWS - ROWS));
         stopIndices.push(stopIdx);
 
@@ -125,35 +107,33 @@ function spin() {
             colDiv.appendChild(cell);
         });
 
-        // Offset တွက်ခြင်း (Pixels)
-        const cellHeight = parseFloat(getComputedStyle(gridElement).getPropertyValue('--cell-height'));
-        const offset = - (stopIdx * (cellHeight + GAP)); 
+        // Offset တွက်ခြင်း: Since each cell is 25% height, move by (stopIdx * 25%)
+        const offsetPercent = - (stopIdx * 25);
         
-        colDiv.style.transform = `translateY(${offset}px)`; 
+        colDiv.style.transform = `translateY(${offsetPercent}%)`; 
         colDiv.style.transition = 'none';
 
         gridElement.appendChild(colDiv);
     }
 
-    // Force browser reflow to apply initial state
+    // Force browser reflow
     gridElement.offsetHeight;
 
-    // 3. Animate columns 1 to 5 sequentially
+    // 2. Animate columns 1 to 5 sequentially
     let currentReel = 0;
     const columns = gridElement.querySelectorAll('.reel-column');
     const delayBetweenReels = 400; // 0.4 seconds
     
     const animInterval = setInterval(() => {
         const col = columns[currentReel];
-        // Apply transition and transform
+        // Apply transition and slide down to 0
         col.style.transition = 'transform 0.7s cubic-bezier(0.15, 0.9, 0.3, 1)';
-        col.style.transform = `translateY(0)`; // Slide DOWN to final position
+        col.style.transform = `translateY(0)`;
 
         currentReel++;
         if (currentReel >= REELS) {
             clearInterval(animInterval);
             
-            // 4. After ALL animations finish, render final static grid with highlights
             setTimeout(() => {
                 const result = calculateWin();
                 renderGrid(result.highlighted);
@@ -162,13 +142,12 @@ function spin() {
                     credit += result.totalWin; creditDisplay.textContent = credit; winDisplay.textContent = result.totalWin;
                 }
                 isSpinning = false; spinBtn.disabled = false;
-            }, 800); // Wait for the last reel to fully settle
+            }, 800);
         }
     }, delayBetweenReels);
 }
 
-// ----- INITIALIZE -----
-initGame(); // Run height calculation first
+// Initial Load
 generateGrid();
 renderGrid([]);
 spinBtn.addEventListener('click', spin);
