@@ -78,14 +78,12 @@ function calculateWin() {
     let highlighted = [];
     let scatterCount = 0;
 
-    // Scatter count
     for (let col = 0; col < REELS; col++) {
         for (let row = 0; row < ROWS; row++) {
             if (grid[col][row].id === SCATTER_ID) scatterCount++;
         }
     }
 
-    // Normal symbols with Wild replacement
     for (let sym of SYMBOLS) {
         let count = 0;
         let positions = [];
@@ -142,7 +140,6 @@ function calculateWin() {
         totalWin += scatterCount * 2;
     }
 
-    // Highlight Scatter
     for (let col = 0; col < REELS; col++) {
         for (let row = 0; row < ROWS; row++) {
             if (grid[col][row].id === SCATTER_ID) {
@@ -164,11 +161,15 @@ function applyHighlights(highlighted) {
     });
 }
 
-// ----- SPIN (Fix: Ensure button is re-enabled) -----
+// ----- SPIN (Ultimate Fix) -----
 function spin() {
-    if (isSpinning) return;
+    //  အရေးကြီးဆုံး ပြင်ချက်: ဒီမှာ သေချာ check လုပ်မယ်
+    if (isSpinning) {
+        console.log("Already spinning, returning...");
+        return; // လည်နေတုန်း နှိပ်ရင် ပြန်ထွက်
+    }
     
-    // Check Free Spin
+    // Free Spin စစ်မယ်
     if (freeSpins > 0) {
         freeSpins--;
         isFreeSpin = true;
@@ -182,9 +183,10 @@ function spin() {
         creditDisplay.textContent = credit;
     }
 
+    //  Spin စပြီဆိုတာနဲ့ Flag ကို ချက်ချင်း ပိတ်မယ်
     isSpinning = true; 
     spinBtn.disabled = true;
-    spinBtn.style.opacity = '0.5'; // အလင်းရောင်ဖျော့သွားအောင်
+    spinBtn.style.opacity = '0.5';
     winDisplay.textContent = '0';
 
     generateGrid();
@@ -223,11 +225,11 @@ function spin() {
         });
     });
 
-    //  FIX: Spin ပြီးသွားရင် ချက်ချင်း ပြန်နှိပ်လို့ရအောင်
-    // Animation ပြီးတဲ့အချိန်ကို တွက်ပြီး သေချာ Enable ပြန်လုပ်မယ်
+    //  Animation ပြီးတဲ့အချိန်ကို တွက်ပြီး သေချာ Enable ပြန်လုပ်မယ်
     const totalAnimationTime = (REELS * DELAY_BETWEEN_REELS) + 700;
     
     setTimeout(() => {
+        // ၁။ Result တွက်မယ်
         const result = calculateWin();
         applyHighlights(result.highlighted);
         
@@ -239,10 +241,12 @@ function spin() {
             winDisplay.textContent = totalWin;
         }
         
-        //  Enable button again
+        // ၂။ Spin ပြီးသွားပြီဆိုတော့ Flag ကို ပြန်ဖွင့်မယ်
         isSpinning = false; 
         spinBtn.disabled = false;
-        spinBtn.style.opacity = '1'; // အလင်းရောင်ပြန်တောက်လာအောင်
+        spinBtn.style.opacity = '1';
+        
+        console.log("Spin finished. Ready for next spin.");
     }, totalAnimationTime);
 }
 
