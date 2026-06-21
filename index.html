@@ -2,29 +2,39 @@
 <html lang="my">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Burmese-Buffalo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Buffalo Gold - Slot</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="game-container">
-    <div class="header">
-        <div> BUFFALO</div>
-        <div>CREDIT: <span id="creditDisplay">1000</span></div>
-        <div>WIN: <span id="winDisplay">0</span></div>
-    </div>
+    <div class="game-wrapper">
+        <div class="game-container">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo"> BUFFALO</div>
+                <div class="stats">
+                    <div>CREDIT: <span id="creditDisplay">2000</span></div>
+                    <div>WIN: <span id="winDisplay">0</span></div>
+                </div>
+            </div>
 
-    <!-- ဒီနေရာမှာ JS က Grid ကို ထည့်ပေးပါလိမ့်မယ် -->
-    <div id="slotGrid" class="slot-grid"></div>
+            <!-- Reels Container (5 Columns x 4 Rows) -->
+            <div class="reels-wrapper">
+                <div id="slotGrid" class="slot-grid">
+                    <!-- JS will generate cells with images here -->
+                </div>
+            </div>
 
-    <div class="controls">
-        <button id="spinBtn" class="spin"> SPIN</button>
-        <div class="info">
-            <span> BET: 10</span>
-            <span class="credit-box"> 1024 WAYS</span>
+            <!-- Controls -->
+            <div class="controls">
+                <button id="spinBtn" class="spin-btn"> SPIN</button>
+                <div class="info-panel">
+                    <span>BET: 10</span>
+                    <span class="badge">1024 WAYS</span>
+                </div>
+            </div>
         </div>
     </div>
-</div>
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
