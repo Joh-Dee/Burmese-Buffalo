@@ -13,7 +13,7 @@ const SYMBOLS = [
 ];
 
 const REELS = 5, ROWS = 4;
-const TALL_ROWS = 15; // သင်ပြောတဲ့အတိုင်း ၁၅ ခု
+const TALL_ROWS = 15;
 
 let grid = [];
 let credit = 2000, isSpinning = false;
@@ -34,7 +34,7 @@ function generateGrid() {
     }
 }
 
-// ----- FINAL RESULT RENDER (4 Rows) -----
+// Final Render (4 rows only)
 function renderGrid(highlighted = []) {
     gridElement.innerHTML = '';
     for (let col = 0; col < REELS; col++) {
@@ -71,7 +71,7 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
-// ----- SPIN (True Rolling) -----
+// ----- SPIN (Correct Sequential Logic) -----
 function spin() {
     if (isSpinning || credit < BET) { 
         if(credit < BET) alert('Credit မလုံလောက်ပါ!'); 
@@ -81,10 +81,20 @@ function spin() {
     isSpinning = true; spinBtn.disabled = true;
     credit -= BET; creditDisplay.textContent = credit; winDisplay.textContent = '0';
 
-    // 1. Generate final result for logic
+    // 1. Set the CSS variable for cell height so CSS can calculate fixed height correctly
+    // We use a temporary cell to measure height
+    const tempCell = document.createElement('div');
+    tempCell.className = 'cell';
+    tempCell.style.visibility = 'hidden';
+    document.body.appendChild(tempCell);
+    const cellHeight = tempCell.offsetHeight;
+    document.body.removeChild(tempCell);
+    gridElement.style.setProperty('--cell-height', cellHeight + 'px');
+
+    // 2. Generate final result first
     generateGrid();
 
-    // 2. Build Tall Columns (15 symbols)
+    // 3. Build Tall Columns (15 symbols) for animation
     gridElement.innerHTML = '';
     let stopIndices = [];
 
@@ -99,7 +109,6 @@ function spin() {
         const stopIdx = Math.floor(Math.random() * (TALL_ROWS - ROWS + 1));
         stopIndices.push(stopIdx);
 
-        // Create cells
         tallSymbols.forEach(sym => {
             const cell = document.createElement('div');
             cell.className = 'cell';
@@ -107,33 +116,35 @@ function spin() {
             colDiv.appendChild(cell);
         });
 
-        // Move column UP by (stopIdx * (100/ROWS)%) 
-        // since 4 rows = 100% height, each row is 25%
+        // Calculate offset: Since 4 rows = 100% height, each row is 25%
         const offsetPercent = - (stopIdx * 25);
+        
+        // Set initial state (Hidden above viewport) with NO transition
         colDiv.style.transform = `translateY(${offsetPercent}%)`;
         colDiv.style.transition = 'none';
 
         gridElement.appendChild(colDiv);
     }
 
-    // Force reflow to set initial state
+    // Force browser reflow to apply initial state
     gridElement.offsetHeight;
 
-    // 3. Animate columns 1 to 5 sequentially (Ease-out)
+    // 4. Animate columns 1 to 5 sequentially (Reel 1 -> Reel 5)
     let currentReel = 0;
     const columns = gridElement.querySelectorAll('.reel-column');
+    const delayBetweenReels = 400; // 0.4 seconds
     
     const animInterval = setInterval(() => {
         const col = columns[currentReel];
-        // Ease-out cubic-bezier
+        // Apply Ease-out transition to slide DOWN to final position
         col.style.transition = 'transform 0.7s cubic-bezier(0.15, 0.9, 0.3, 1)';
-        col.style.transform = 'translateY(0)'; // Slide DOWN to final position
+        col.style.transform = 'translateY(0)';
 
         currentReel++;
         if (currentReel >= REELS) {
             clearInterval(animInterval);
             
-            // 4. After animation, show final 4-row grid with highlights
+            // 5. After ALL animations finish, render final static grid with highlights
             setTimeout(() => {
                 const result = calculateWin();
                 renderGrid(result.highlighted);
@@ -142,12 +153,12 @@ function spin() {
                     credit += result.totalWin; creditDisplay.textContent = credit; winDisplay.textContent = result.totalWin;
                 }
                 isSpinning = false; spinBtn.disabled = false;
-            }, 800); // Wait for animation to fully stop
+            }, 800); // Wait for the last reel to fully settle
         }
-    }, 450); // 0.45s delay between reels
+    }, delayBetweenReels);
 }
 
-// Initial Render
+// Initial Load
 generateGrid();
 renderGrid([]);
 spinBtn.addEventListener('click', spin);
