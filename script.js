@@ -54,37 +54,66 @@ function renderInitialGrid() {
 }
 
 function calculateWin() {
-    let totalWin = 0, highlighted = [];
+    let totalWin = 0;
+    let highlighted = [];
+
+    // Symbol တစ်ခုချင်းစီအတွက် စစ်ဆေးမယ်
     for (let sym of SYMBOLS) {
-        let count = 0, positions = [];
-        for (let col = 0; col < REELS; col++) {
-            let found = false, rowPos = [];
-            for (let row = 0; row < ROWS; row++) {
-                if (grid[col][row].id === sym.id) { found = true; rowPos.push({ col, row }); }
+        let count = 0;
+        let positions = [];
+
+        // Reel 1 (col = 0) မှာ ဒီ Symbol ရှိမရှိ အရင်ဆုံး စစ်ပါတယ်။
+        let foundInReel1 = false;
+        let rowPosReel1 = [];
+        for (let row = 0; row < ROWS; row++) {
+            if (grid[0][row].id === sym.id) {
+                foundInReel1 = true;
+                rowPosReel1.push({ col: 0, row });
             }
-            if (found) { count++; positions.push(...rowPos); } else break;
         }
+
+        //  အကယ်၍ Reel 1 မှာ လုံးဝ မရှိဘူးဆိုရင် ဒီ Symbol အတွက် ချက်ချင်း ရပ်လိုက်ပါ (Skip)
+        if (!foundInReel1) {
+            continue; // နောက် Symbol ကို ဆက်စစ်မယ်
+        }
+
+        //  Reel 1 မှာ တွေ့ပြီဆိုရင် Reel 2, 3, 4, 5 ကို ဆက်စစ်မယ်
+        // ပထမဆုံး Reel 1 မှာတွေ့တဲ့ row တွေကို မှတ်ထားမယ်
+        positions.push(...rowPosReel1);
+        count = 1; // Reel 1 မှာ တွေ့လို့ count 1 ရပြီ
+
+        // Reel 2 ကနေ Reel 5 အထိ ဆက်စစ်မယ်
+        for (let col = 1; col < REELS; col++) {
+            let foundInThisReel = false;
+            let rowPos = [];
+
+            for (let row = 0; row < ROWS; row++) {
+                if (grid[col][row].id === sym.id) {
+                    foundInThisReel = true;
+                    rowPos.push({ col, row });
+                }
+            }
+
+            // အကယ်၍ ဒီ Reel မှာ တွေ့ရင် count တိုးပြီး positions ထဲ ထည့်မယ်
+            if (foundInThisReel) {
+                count++;
+                positions.push(...rowPos);
+            } else {
+                //  ဒီ Reel မှာ မတွေ့တော့ဘူးဆိုရင် ချက်ချင်း ဆက်မစစ်တော့ပါဘူး (Break)
+                break;
+            }
+        }
+
+        // အကယ်၍ Reel 1 ပါပြီး အနည်းဆုံး 2 Reels ဆက်တိုက်ပါရင် အမှတ်ပေးမယ်
         if (count >= 2) {
-            totalWin += count * count * sym.value;
+            let points = count * count * sym.value;
+            totalWin += points;
             highlighted.push(...positions);
         }
     }
+
     return { totalWin, highlighted };
-}
-
-//  FINAL HIGHLIGHT FIX
-function applyHighlights(highlighted) {
-    const columns = gridElement.querySelectorAll('.reel-column');
-    
-    highlighted.forEach(h => {
-        // translateY(0) ပြီးသွားရင် Final 4 rows က အောက်ဆုံးမှာ ရှိနေပြီ။
-        // အောက်ဆုံးကနေ ပြန်ရေတွက်ရမယ်။
-        const targetIndex = (TALL_ROWS - 1) - h.row; 
-        const targetCell = columns[h.col].children[targetIndex];
-        if(targetCell) targetCell.classList.add('highlight');
-    });
-}
-
+        }
 function spin() {
     if (isSpinning || credit < BET) {
         if(credit < BET) alert('Credit မလုံလောက်ပါ!');
