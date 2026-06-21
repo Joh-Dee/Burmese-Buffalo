@@ -29,6 +29,7 @@ body {
     transform: rotateX(2deg);
 }
 
+/* HEADER */
 .header {
     display: flex;
     justify-content: space-between;
@@ -43,15 +44,15 @@ body {
 .stats { display: flex; gap: 20px; color: #ffd700; font-weight: bold; font-size: 14px; }
 .stats span { color: #fff; }
 
-/* REELS WRAPPER - ဒီမှာ သေချာ HIDE လုပ်မယ် */
+/* REELS WRAPPER - Absolute Position သုံးပြီး ဖုံးမယ် */
 .reels-wrapper {
     position: relative;
     background: linear-gradient(180deg, #1c0f00, #442200);
     border-radius: 15px;
     border: 2px solid #b8860b;
-    padding: 0; /* Padding ကို ဖယ်လိုက်မယ် */
+    padding: 0;
     box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
-    overflow: hidden; /* အရေးကြီးဆုံး - ဒါက ပိုလျှံတာတွေကို ဖုံးပေးမယ် */
+    overflow: hidden; /* ဒါက Grid ကို သေချာဖုံးပေးမယ် */
 }
 
 .slot-grid {
@@ -59,12 +60,13 @@ body {
     grid-template-columns: repeat(5, 1fr);
     gap: 6px;
     background: #fcebc7;
-    padding: 6px; /* Padding ပြန်ထည့်မယ် */
+    padding: 6px;
     border-radius: 10px;
     border: 1px solid #cc9900;
+    position: relative;
 }
 
-/* CELL */
+/* CELL - အတန်း ၄ ခုပဲ ပြတဲ့ပုံစံ */
 .cell {
     aspect-ratio: 1 / 1.1;
     background-color: #fdf5e6;
@@ -77,6 +79,7 @@ body {
     background-position: center center;
     background-repeat: no-repeat;
     background-size: contain; 
+    width: 100%;
 }
 
 .cell.highlight {
