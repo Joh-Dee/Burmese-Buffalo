@@ -101,6 +101,8 @@ function spin() {
     for (let col = 0; col < REELS; col++) {
         const colDiv = document.createElement('div');
         colDiv.className = 'reel-column';
+
+        colDiv.style.height = `calc(var(--cell-height) * 4 + (8px * 3))`; 
         
         let tallSymbols = [];
         for (let i = 0; i < TALL_ROWS; i++) tallSymbols.push(randomSymbol());
