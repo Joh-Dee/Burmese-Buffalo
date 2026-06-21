@@ -22,6 +22,7 @@ const gridElement = document.getElementById('slotGrid');
 const creditDisplay = document.getElementById('creditDisplay');
 const winDisplay = document.getElementById('winDisplay');
 const spinBtn = document.getElementById('spinBtn');
+const GAP = 8; // CSS က gap နဲ့ တူရမယ်
 
 function randomSymbol() { return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; }
 
@@ -40,6 +41,7 @@ function renderGrid(highlighted = []) {
     for (let col = 0; col < REELS; col++) {
         const colDiv = document.createElement('div');
         colDiv.className = 'reel-column';
+        colDiv.style.transition = 'none'; // Remove animation for final state
         for (let row = 0; row < ROWS; row++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
@@ -71,7 +73,7 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
-// ----- SPIN (Correct Sequential Logic) -----
+// ----- SPIN (သင်ရေးတဲ့အတိုင်း) -----
 function spin() {
     if (isSpinning || credit < BET) { 
         if(credit < BET) alert('Credit မလုံလောက်ပါ!'); 
@@ -81,8 +83,7 @@ function spin() {
     isSpinning = true; spinBtn.disabled = true;
     credit -= BET; creditDisplay.textContent = credit; winDisplay.textContent = '0';
 
-    // 1. Set the CSS variable for cell height so CSS can calculate fixed height correctly
-    // We use a temporary cell to measure height
+    // 1. Set the CSS variable for cell height 
     const tempCell = document.createElement('div');
     tempCell.className = 'cell';
     tempCell.style.visibility = 'hidden';
@@ -101,14 +102,12 @@ function spin() {
     for (let col = 0; col < REELS; col++) {
         const colDiv = document.createElement('div');
         colDiv.className = 'reel-column';
-
-        colDiv.style.height = `calc(var(--cell-height) * 4 + (8px * 3))`; 
         
         let tallSymbols = [];
         for (let i = 0; i < TALL_ROWS; i++) tallSymbols.push(randomSymbol());
 
-        // Random stop position (ensure 4 visible rows remain)
-        const stopIdx = Math.floor(Math.random() * (TALL_ROWS - ROWS + 1));
+        // stopIdx က 0 ကနေ 11 ထိပဲရှိမယ် (15-4 = 11)
+        const stopIdx = Math.floor(Math.random() * (TALL_ROWS - ROWS));
         stopIndices.push(stopIdx);
 
         tallSymbols.forEach(sym => {
@@ -118,11 +117,11 @@ function spin() {
             colDiv.appendChild(cell);
         });
 
-        // Calculate offset: Since 4 rows = 100% height, each row is 25%
-        const offsetPercent = - (stopIdx * 25);
+        // Offset တွက်ခြင်း
+        const offset = - (stopIdx * (cellHeight + GAP)); 
         
         // Set initial state (Hidden above viewport) with NO transition
-        colDiv.style.transform = `translateY(${offsetPercent}%)`;
+        colDiv.style.transform = `translateY(${offset}px)`; 
         colDiv.style.transition = 'none';
 
         gridElement.appendChild(colDiv);
@@ -138,9 +137,8 @@ function spin() {
     
     const animInterval = setInterval(() => {
         const col = columns[currentReel];
-        // Apply Ease-out transition to slide DOWN to final position
-        col.style.transition = 'transform 0.7s cubic-bezier(0.15, 0.9, 0.3, 1)';
-        col.style.transform = 'translateY(0)';
+        // Transition က CSS မှာ သတ်မှတ်ထားပြီးသား
+        col.style.transform = `translateY(0)`; // Slide DOWN to final position
 
         currentReel++;
         if (currentReel >= REELS) {
