@@ -1,16 +1,22 @@
 const IMAGE_MAP = {
     'buffalo': 'buffalo.png', 'lion': 'lion.png', 'elephant': 'elephant.png',
     'deer': 'deer.png', 'zebra': 'zebra.png', 'A': 'a.png', 'K': 'k.png',
-    'Q': 'q.png', 'J': 'j.png', '10': '10.png'
+    'Q': 'q.png', 'J': 'j.png', '10': '10.png',
+    'wild': 'wild.png', 'scatter': 'scatter.png'
 };
 
+// Base Values for Normal Symbols (Wild & Scatter have 0)
 const SYMBOLS = [
     { id: 'buffalo', value: 10 }, { id: 'lion', value: 8 },
     { id: 'elephant', value: 7 }, { id: 'deer', value: 5 },
     { id: 'zebra', value: 4 }, { id: 'A', value: 3 },
     { id: 'K', value: 3 }, { id: 'Q', value: 2 },
-    { id: 'J', value: 2 }, { id: '10', value: 1 },
+    { id: 'J', value: 2 }, { id: '10', value: 1 }
 ];
+// IDs for checking
+const NORMAL_IDS = SYMBOLS.map(s => s.id);
+const WILD_ID = 'wild';
+const SCATTER_ID = 'scatter';
 
 const REELS = 5, ROWS = 4;
 const TALL_ROWS = 12; 
@@ -18,6 +24,8 @@ const DELAY_BETWEEN_REELS = 200;
 
 let grid = [];
 let credit = 2000, isSpinning = false;
+let freeSpins = 0; // ကျန်နေတဲ့ Free Spin အရေအတွက်
+let isFreeSpin = false;
 const BET = 10;
 
 const gridElement = document.getElementById('slotGrid');
@@ -25,7 +33,20 @@ const creditDisplay = document.getElementById('creditDisplay');
 const winDisplay = document.getElementById('winDisplay');
 const spinBtn = document.getElementById('spinBtn');
 
-function randomSymbol() { return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; }
+// ----- HELPERS -----
+function randomSymbol() {
+    // 2% Wild (Free Spin ကာလမှာ), 4% Scatter, ကျန်တာ Normal
+    const isFree = isFreeSpin;
+    const wildChance = isFree ? 0.02 : 0.05; // Free: 2%, Normal: 5%
+    const scatterChance = 0.04;
+    
+    let r = Math.random();
+    if (r < wildChance) return { id: WILD_ID, value: 0 };
+    if (r < wildChance + scatterChance) return { id: SCATTER_ID, value: 0 };
+    
+    const idx = Math.floor(Math.random() * SYMBOLS.length);
+    return SYMBOLS[idx];
+}
 
 function generateGrid() {
     grid = [];
@@ -36,6 +57,7 @@ function generateGrid() {
     }
 }
 
+// ----- RENDER -----
 function renderInitialGrid() {
     gridElement.innerHTML = '';
     for (let col = 0; col < REELS; col++) {
@@ -53,77 +75,125 @@ function renderInitialGrid() {
     }
 }
 
+// ----- WIN LOGIC (Wild & Scatter) -----
 function calculateWin() {
     let totalWin = 0;
     let highlighted = [];
+    let scatterCount = 0;
 
-    // Symbol တစ်ခုချင်းစီအတွက် စစ်ဆေးမယ်
+    // 1. Scatter အရေအတွက် ရေတွက်မယ် (နေရာမရွေး)
+    for (let col = 0; col < REELS; col++) {
+        for (let row = 0; row < ROWS; row++) {
+            if (grid[col][row].id === SCATTER_ID) scatterCount++;
+        }
+    }
+
+    // 2. ပုံမှန် Symbol တွေအတွက် Wild နဲ့ပေါင်းပြီး ရေတွက်မယ်
     for (let sym of SYMBOLS) {
         let count = 0;
         let positions = [];
 
-        // Reel 1 (col = 0) မှာ ဒီ Symbol ရှိမရှိ အရင်ဆုံး စစ်ပါတယ်။
+        // Reel 1 မှာ ရှိမရှိ အရင်စစ်
         let foundInReel1 = false;
         let rowPosReel1 = [];
         for (let row = 0; row < ROWS; row++) {
-            if (grid[0][row].id === sym.id) {
+            const id = grid[0][row].id;
+            if (id === sym.id || id === WILD_ID) {
                 foundInReel1 = true;
                 rowPosReel1.push({ col: 0, row });
             }
         }
+        if (!foundInReel1) continue;
 
-        //  အကယ်၍ Reel 1 မှာ လုံးဝ မရှိဘူးဆိုရင် ဒီ Symbol အတွက် ချက်ချင်း ရပ်လိုက်ပါ (Skip)
-        if (!foundInReel1) {
-            continue; // နောက် Symbol ကို ဆက်စစ်မယ်
-        }
-
-        //  Reel 1 မှာ တွေ့ပြီဆိုရင် Reel 2, 3, 4, 5 ကို ဆက်စစ်မယ်
-        // ပထမဆုံး Reel 1 မှာတွေ့တဲ့ row တွေကို မှတ်ထားမယ်
         positions.push(...rowPosReel1);
-        count = 1; // Reel 1 မှာ တွေ့လို့ count 1 ရပြီ
+        count = 1;
 
-        // Reel 2 ကနေ Reel 5 အထိ ဆက်စစ်မယ်
+        // Reel 2 ကနေ 5 အထိ ဆက်စစ်
         for (let col = 1; col < REELS; col++) {
-            let foundInThisReel = false;
+            let found = false;
             let rowPos = [];
-
             for (let row = 0; row < ROWS; row++) {
-                if (grid[col][row].id === sym.id) {
-                    foundInThisReel = true;
+                const id = grid[col][row].id;
+                if (id === sym.id || id === WILD_ID) {
+                    found = true;
                     rowPos.push({ col, row });
                 }
             }
-
-            // အကယ်၍ ဒီ Reel မှာ တွေ့ရင် count တိုးပြီး positions ထဲ ထည့်မယ်
-            if (foundInThisReel) {
+            if (found) {
                 count++;
                 positions.push(...rowPos);
             } else {
-                //  ဒီ Reel မှာ မတွေ့တော့ဘူးဆိုရင် ချက်ချင်း ဆက်မစစ်တော့ပါဘူး (Break)
                 break;
             }
         }
 
-        // အကယ်၍ Reel 1 ပါပြီး အနည်းဆုံး 2 Reels ဆက်တိုက်ပါရင် အမှတ်ပေးမယ်
-        if (count >= 2) {
-            let points = count * count * sym.value;
+        // Minimum 3 ခုကနေ စတွက်မယ် (Buffalo ကတော့ 2 ခုကနေစမယ်)
+        let minCount = (sym.id === 'buffalo') ? 2 : 3;
+        if (count >= minCount) {
+            // အမှတ်တွက်နည်းအသစ်: (Count  Count  Value)  0.5
+            let points = (count * count * sym.value) * 0.5;
             totalWin += points;
             highlighted.push(...positions);
         }
     }
 
-    return { totalWin, highlighted };
+    // 3. Scatter အတွက် Free Spins ပေးမယ်
+    let freeSpinReward = 0;
+    if (scatterCount >= 3) {
+        if (scatterCount === 3) freeSpinReward = 8;
+        else if (scatterCount === 4) freeSpinReward = 12;
+        else if (scatterCount >= 5) freeSpinReward = 18;
+        
+        // Free Spin ကာလမှာ ထပ်တိုးမပေးပါဘူး (Trigger only once)
+        if (!isFreeSpin) {
+            freeSpins += freeSpinReward;
         }
-function spin() {
-    if (isSpinning || credit < BET) {
-        if(credit < BET) alert('Credit မလုံလောက်ပါ!');
-        return;
+        // Scatter အတွက် သေးသေးလေး အမှတ်ပေးမယ်
+        totalWin += scatterCount * 2;
     }
+
+    // Highlight Scatter symbols too (optional)
+    for (let col = 0; col < REELS; col++) {
+        for (let row = 0; row < ROWS; row++) {
+            if (grid[col][row].id === SCATTER_ID) {
+                highlighted.push({ col, row });
+            }
+        }
+    }
+
+    return { totalWin, highlighted, freeSpinReward };
+}
+
+// ----- HIGHLIGHT -----
+function applyHighlights(highlighted) {
+    const columns = gridElement.querySelectorAll('.reel-column');
+    highlighted.forEach(h => {
+        const targetIndex = (TALL_ROWS - ROWS) + h.row;
+        const targetCell = columns[h.col].children[targetIndex];
+        if(targetCell) targetCell.classList.add('highlight');
+    });
+}
+
+// ----- SPIN -----
+function spin() {
+    if (isSpinning) return;
     
+    // Free Spin သုံးမလား စစ်မယ်
+    if (freeSpins > 0) {
+        freeSpins--;
+        isFreeSpin = true;
+    } else {
+        isFreeSpin = false;
+        if (credit < BET) {
+            alert('Credit မလုံလောက်ပါ!');
+            return;
+        }
+        credit -= BET;
+        creditDisplay.textContent = credit;
+    }
+
     isSpinning = true; 
     spinBtn.disabled = true;
-    credit -= BET; 
-    creditDisplay.textContent = credit; 
     winDisplay.textContent = '0';
 
     generateGrid();
@@ -166,16 +236,25 @@ function spin() {
         const result = calculateWin();
         applyHighlights(result.highlighted);
         
-        if (result.totalWin > 0) {
-            credit += result.totalWin; 
+        let totalWin = result.totalWin;
+        
+        // Free Spin ကာလမှာ အမှတ်တွေ ၂ ဆ မပေးတော့ဘူး (သင်ပြောတဲ့အတိုင်း)
+        // ဒါပေမယ့် Free Spin ကာလအတွင်း ရလာတဲ့ အမှတ်ကို Credit ထဲ ထည့်မယ်
+        if (totalWin > 0) {
+            credit += totalWin; 
             creditDisplay.textContent = credit; 
-            winDisplay.textContent = result.totalWin;
+            winDisplay.textContent = totalWin;
         }
+        
+        // Free Spin count ကို update လုပ်မယ် (UI မှာပြဖို့)
+        // (UI မှာ Free Spin count ပြဖို့ နေရာမရှိသေးပေမယ့် logic ထဲမှာ ရှိနေပြီ)
+        
         isSpinning = false; 
         spinBtn.disabled = false;
     }, (REELS * DELAY_BETWEEN_REELS) + 700);
 }
 
+// Initial Call
 generateGrid();
 renderInitialGrid();
 spinBtn.addEventListener('click', spin);
