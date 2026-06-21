@@ -72,14 +72,14 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
-//  HIGHLIGHT FIX: Buffer 8 ခုကို ကျော်ပြီးမှ Final 4 rows ကို ရှာမယ်
+//  FINAL HIGHLIGHT FIX
 function applyHighlights(highlighted) {
     const columns = gridElement.querySelectorAll('.reel-column');
     
     highlighted.forEach(h => {
-        // translateY(0) ပြီးသွားတဲ့အခါ Column ထဲမှာ Buffer (8) + Final (4) ရှိနေတယ်
-        // Final rows က အောက်ဆုံးမှာ ရှိတဲ့အတွက် offset (TALL_ROWS - ROWS) ကို ပေါင်းပေးရမယ်
-        const targetIndex = (TALL_ROWS - ROWS) + h.row; 
+        // translateY(0) ပြီးသွားရင် Final 4 rows က အောက်ဆုံးမှာ ရှိနေပြီ။
+        // အောက်ဆုံးကနေ ပြန်ရေတွက်ရမယ်။
+        const targetIndex = (TALL_ROWS - 1) - h.row; 
         const targetCell = columns[h.col].children[targetIndex];
         if(targetCell) targetCell.classList.add('highlight');
     });
@@ -147,7 +147,6 @@ function spin() {
     }, (REELS * DELAY_BETWEEN_REELS) + 700);
 }
 
-// Initial Call
 generateGrid();
 renderInitialGrid();
 spinBtn.addEventListener('click', spin);
