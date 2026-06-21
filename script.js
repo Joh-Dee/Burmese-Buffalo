@@ -14,8 +14,9 @@ const SYMBOLS = [
 
 const REELS = 5, ROWS = 4;
 const TALL_ROWS = 15;
+const DELAY_BETWEEN_REELS = 400; // ms
 
-let grid = [];
+let grid = []; // Final Result (4 rows)
 let credit = 2000, isSpinning = false;
 const BET = 10;
 const gridElement = document.getElementById('slotGrid');
@@ -25,6 +26,7 @@ const spinBtn = document.getElementById('spinBtn');
 
 function randomSymbol() { return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; }
 
+// ----- 1. ကြိုတွက်ထားတဲ့ Final Grid (ကျလာမယ့် Result) -----
 function generateGrid() {
     grid = [];
     for (let col = 0; col < REELS; col++) {
@@ -34,7 +36,7 @@ function generateGrid() {
     }
 }
 
-// FINAL RENDER (4 rows only)
+// ----- 2. Final Result အတိုင်း ပြသမယ့် Render -----
 function renderGrid(highlighted = []) {
     gridElement.innerHTML = '';
     for (let col = 0; col < REELS; col++) {
@@ -53,6 +55,7 @@ function renderGrid(highlighted = []) {
     }
 }
 
+// ----- WIN LOGIC -----
 function calculateWin() {
     let totalWin = 0, highlighted = [];
     for (let sym of SYMBOLS) {
@@ -72,7 +75,7 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
-// SPIN (Animation Logic)
+// ----- 3. အစစ်အမှန် Slot လိုမျိုး ကြိုတွက်ပြီး ကျစေမယ့် Animation -----
 function spin() {
     if (isSpinning || credit < BET) { 
         if(credit < BET) alert('Credit မလုံလောက်ပါ!'); 
@@ -82,24 +85,38 @@ function spin() {
     isSpinning = true; spinBtn.disabled = true;
     credit -= BET; creditDisplay.textContent = credit; winDisplay.textContent = '0';
 
+    // STEP 1: ကြိုတွက်ထားတဲ့ Final Result ကို ရယူပါ
     generateGrid();
 
-    // 1. Build Tall Columns (15 symbols) for animation
+    // STEP 2: Reel Animation အတွက် 15 Symbol ကို တည်ဆောက်ပါ
     gridElement.innerHTML = '';
-    let stopIndices = [];
+    
+    // ရပ်တဲ့အခါ ပေါ်မယ့် Symbol တွေကို သေချာ ထည့်သွင်းဖို့ stopIndices ကို သိမ်းထားပါမယ်
+    let finalStopIndices = [];
 
     for (let col = 0; col < REELS; col++) {
         const colDiv = document.createElement('div');
         colDiv.className = 'reel-column';
-        colDiv.style.transition = 'none'; // Initially no transition
+        colDiv.style.transition = 'none'; // Initial setup, no transition
         
         let tallSymbols = [];
-        for (let i = 0; i < TALL_ROWS; i++) tallSymbols.push(randomSymbol());
 
-        // Random stop index (0 to 11)
-        const stopIdx = Math.floor(Math.random() * (TALL_ROWS - ROWS));
-        stopIndices.push(stopIdx);
+        // 1 Reel အပေါ်ပိုင်း (Buffer) - ကျပန်း Symbol များ
+        for (let i = 0; i < 11; i++) { // 15 - 4 = 11 slots above
+            tallSymbols.push(randomSymbol());
+        }
+        // 2 အောက်ဆုံး 4 ခု - Final Grid ထဲက Symbol များ (Result)
+        for (let row = 0; row < ROWS; row++) {
+            tallSymbols.push(grid[col][row]);
+        }
 
+        // 3 Offset တွက်ခြင်း - ရပ်တဲ့အခါ အောက်ဆုံး 4 ခု ပေါ်လာအောင်
+        // 11 slots above -> 11 * 25% = 275% up. 
+        // ဒါပေမယ့် Reel ကို Smooth ဖြစ်အောင် နည်းနည်း ပိုတင်ပြီး ကျစေမယ်
+        const stopIdx = Math.floor(Math.random() * 2) + 10; // 10 or 11 (Just above the 4 result slots)
+        finalStopIndices.push(stopIdx);
+
+        // 4 Column ထဲကို Symbol တွေ ထည့်ပါ
         tallSymbols.forEach(sym => {
             const cell = document.createElement('div');
             cell.className = 'cell';
@@ -107,11 +124,9 @@ function spin() {
             colDiv.appendChild(cell);
         });
 
-        // Offset တွက်ခြင်း: Since each cell is 25% height, move by (stopIdx * 25%)
+        // 5 Initial Transform: Move UP by (stopIdx * 25%)
         const offsetPercent = - (stopIdx * 25);
-        
         colDiv.style.transform = `translateY(${offsetPercent}%)`; 
-        colDiv.style.transition = 'none';
 
         gridElement.appendChild(colDiv);
     }
@@ -119,32 +134,35 @@ function spin() {
     // Force browser reflow
     gridElement.offsetHeight;
 
-    // 2. Animate columns 1 to 5 sequentially
+    // STEP 3: Staggered Animation (Reel 1 to Reel 5)
     let currentReel = 0;
     const columns = gridElement.querySelectorAll('.reel-column');
-    const delayBetweenReels = 400; // 0.4 seconds
     
     const animInterval = setInterval(() => {
         const col = columns[currentReel];
-        // Apply transition and slide down to 0
-        col.style.transition = 'transform 0.7s cubic-bezier(0.15, 0.9, 0.3, 1)';
+        // Smooth transition နဲ့ အောက်ကို ကျစေမယ်
+        col.style.transition = `transform 0.7s cubic-bezier(0.15, 0.9, 0.3, 1)`;
         col.style.transform = `translateY(0)`;
 
         currentReel++;
         if (currentReel >= REELS) {
             clearInterval(animInterval);
             
+            // STEP 4: Animation ပြီးသွားရင် Final Grid ကို Highlight နဲ့ ပြသမယ်
             setTimeout(() => {
                 const result = calculateWin();
                 renderGrid(result.highlighted);
                 
                 if (result.totalWin > 0) {
-                    credit += result.totalWin; creditDisplay.textContent = credit; winDisplay.textContent = result.totalWin;
+                    credit += result.totalWin; 
+                    creditDisplay.textContent = credit; 
+                    winDisplay.textContent = result.totalWin;
                 }
-                isSpinning = false; spinBtn.disabled = false;
+                isSpinning = false; 
+                spinBtn.disabled = false;
             }, 800);
         }
-    }, delayBetweenReels);
+    }, DELAY_BETWEEN_REELS);
 }
 
 // Initial Load
