@@ -5,7 +5,6 @@ const IMAGE_MAP = {
     'wild': 'wild.png', 'scatter': 'scatter.png'
 };
 
-// Base Values for Normal Symbols (Wild & Scatter have 0)
 const SYMBOLS = [
     { id: 'buffalo', value: 10 }, { id: 'lion', value: 8 },
     { id: 'elephant', value: 7 }, { id: 'deer', value: 5 },
@@ -13,8 +12,7 @@ const SYMBOLS = [
     { id: 'K', value: 3 }, { id: 'Q', value: 2 },
     { id: 'J', value: 2 }, { id: '10', value: 1 }
 ];
-// IDs for checking
-const NORMAL_IDS = SYMBOLS.map(s => s.id);
+
 const WILD_ID = 'wild';
 const SCATTER_ID = 'scatter';
 
@@ -24,7 +22,7 @@ const DELAY_BETWEEN_REELS = 200;
 
 let grid = [];
 let credit = 2000, isSpinning = false;
-let freeSpins = 0; // ကျန်နေတဲ့ Free Spin အရေအတွက်
+let freeSpins = 0;
 let isFreeSpin = false;
 const BET = 10;
 
@@ -35,9 +33,8 @@ const spinBtn = document.getElementById('spinBtn');
 
 // ----- HELPERS -----
 function randomSymbol() {
-    // 2% Wild (Free Spin ကာလမှာ), 4% Scatter, ကျန်တာ Normal
     const isFree = isFreeSpin;
-    const wildChance = isFree ? 0.02 : 0.05; // Free: 2%, Normal: 5%
+    const wildChance = isFree ? 0.02 : 0.05;
     const scatterChance = 0.04;
     
     let r = Math.random();
@@ -75,25 +72,24 @@ function renderInitialGrid() {
     }
 }
 
-// ----- WIN LOGIC (Wild & Scatter) -----
+// ----- WIN LOGIC -----
 function calculateWin() {
     let totalWin = 0;
     let highlighted = [];
     let scatterCount = 0;
 
-    // 1. Scatter အရေအတွက် ရေတွက်မယ် (နေရာမရွေး)
+    // Scatter count
     for (let col = 0; col < REELS; col++) {
         for (let row = 0; row < ROWS; row++) {
             if (grid[col][row].id === SCATTER_ID) scatterCount++;
         }
     }
 
-    // 2. ပုံမှန် Symbol တွေအတွက် Wild နဲ့ပေါင်းပြီး ရေတွက်မယ်
+    // Normal symbols with Wild replacement
     for (let sym of SYMBOLS) {
         let count = 0;
         let positions = [];
 
-        // Reel 1 မှာ ရှိမရှိ အရင်စစ်
         let foundInReel1 = false;
         let rowPosReel1 = [];
         for (let row = 0; row < ROWS; row++) {
@@ -108,7 +104,6 @@ function calculateWin() {
         positions.push(...rowPosReel1);
         count = 1;
 
-        // Reel 2 ကနေ 5 အထိ ဆက်စစ်
         for (let col = 1; col < REELS; col++) {
             let found = false;
             let rowPos = [];
@@ -127,32 +122,27 @@ function calculateWin() {
             }
         }
 
-        // Minimum 3 ခုကနေ စတွက်မယ် (Buffalo ကတော့ 2 ခုကနေစမယ်)
         let minCount = (sym.id === 'buffalo') ? 2 : 3;
         if (count >= minCount) {
-            // အမှတ်တွက်နည်းအသစ်: (Count  Count  Value)  0.5
             let points = (count * count * sym.value) * 0.5;
             totalWin += points;
             highlighted.push(...positions);
         }
     }
 
-    // 3. Scatter အတွက် Free Spins ပေးမယ်
     let freeSpinReward = 0;
     if (scatterCount >= 3) {
         if (scatterCount === 3) freeSpinReward = 8;
         else if (scatterCount === 4) freeSpinReward = 12;
         else if (scatterCount >= 5) freeSpinReward = 18;
         
-        // Free Spin ကာလမှာ ထပ်တိုးမပေးပါဘူး (Trigger only once)
         if (!isFreeSpin) {
             freeSpins += freeSpinReward;
         }
-        // Scatter အတွက် သေးသေးလေး အမှတ်ပေးမယ်
         totalWin += scatterCount * 2;
     }
 
-    // Highlight Scatter symbols too (optional)
+    // Highlight Scatter
     for (let col = 0; col < REELS; col++) {
         for (let row = 0; row < ROWS; row++) {
             if (grid[col][row].id === SCATTER_ID) {
@@ -174,11 +164,11 @@ function applyHighlights(highlighted) {
     });
 }
 
-// ----- SPIN -----
+// ----- SPIN (Fix: Ensure button is re-enabled) -----
 function spin() {
     if (isSpinning) return;
     
-    // Free Spin သုံးမလား စစ်မယ်
+    // Check Free Spin
     if (freeSpins > 0) {
         freeSpins--;
         isFreeSpin = true;
@@ -194,6 +184,7 @@ function spin() {
 
     isSpinning = true; 
     spinBtn.disabled = true;
+    spinBtn.style.opacity = '0.5'; // အလင်းရောင်ဖျော့သွားအောင်
     winDisplay.textContent = '0';
 
     generateGrid();
@@ -232,26 +223,27 @@ function spin() {
         });
     });
 
+    //  FIX: Spin ပြီးသွားရင် ချက်ချင်း ပြန်နှိပ်လို့ရအောင်
+    // Animation ပြီးတဲ့အချိန်ကို တွက်ပြီး သေချာ Enable ပြန်လုပ်မယ်
+    const totalAnimationTime = (REELS * DELAY_BETWEEN_REELS) + 700;
+    
     setTimeout(() => {
         const result = calculateWin();
         applyHighlights(result.highlighted);
         
         let totalWin = result.totalWin;
         
-        // Free Spin ကာလမှာ အမှတ်တွေ ၂ ဆ မပေးတော့ဘူး (သင်ပြောတဲ့အတိုင်း)
-        // ဒါပေမယ့် Free Spin ကာလအတွင်း ရလာတဲ့ အမှတ်ကို Credit ထဲ ထည့်မယ်
         if (totalWin > 0) {
             credit += totalWin; 
             creditDisplay.textContent = credit; 
             winDisplay.textContent = totalWin;
         }
         
-        // Free Spin count ကို update လုပ်မယ် (UI မှာပြဖို့)
-        // (UI မှာ Free Spin count ပြဖို့ နေရာမရှိသေးပေမယ့် logic ထဲမှာ ရှိနေပြီ)
-        
+        //  Enable button again
         isSpinning = false; 
         spinBtn.disabled = false;
-    }, (REELS * DELAY_BETWEEN_REELS) + 700);
+        spinBtn.style.opacity = '1'; // အလင်းရောင်ပြန်တောက်လာအောင်
+    }, totalAnimationTime);
 }
 
 // Initial Call
