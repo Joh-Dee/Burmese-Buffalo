@@ -13,10 +13,11 @@ const SYMBOLS = [
 ];
 
 const REELS = 5, ROWS = 4;
-const TALL_ROWS = 15;
-const DELAY_BETWEEN_REELS = 400; // ms
+// ကျွန်တော်တို့က Reel ကို 15 ခုကနေ 12 ခုပဲ သုံးတော့မယ် (Overflow အတွက် လုံလောက်ပြီ)
+const TALL_ROWS = 12; 
+const DELAY_BETWEEN_REELS = 400;
 
-let grid = []; // Final Result (4 rows)
+let grid = [];
 let credit = 2000, isSpinning = false;
 const BET = 10;
 const gridElement = document.getElementById('slotGrid');
@@ -26,7 +27,7 @@ const spinBtn = document.getElementById('spinBtn');
 
 function randomSymbol() { return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; }
 
-// ----- 1. ကြိုတွက်ထားတဲ့ Final Grid (ကျလာမယ့် Result) -----
+// ----- 1. ကြိုတွက်ထားတဲ့ Final Grid -----
 function generateGrid() {
     grid = [];
     for (let col = 0; col < REELS; col++) {
@@ -36,7 +37,7 @@ function generateGrid() {
     }
 }
 
-// ----- 2. Final Result အတိုင်း ပြသမယ့် Render -----
+// ----- 2. Static Render -----
 function renderGrid(highlighted = []) {
     gridElement.innerHTML = '';
     for (let col = 0; col < REELS; col++) {
@@ -75,7 +76,7 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
-// ----- 3. အစစ်အမှန် Slot လိုမျိုး ကြိုတွက်ပြီး ကျစေမယ့် Animation -----
+// ----- 3. ပြဿနာ ၂ ခုလုံးကို ဖြေရှင်းမယ့် Core Logic -----
 function spin() {
     if (isSpinning || credit < BET) { 
         if(credit < BET) alert('Credit မလုံလောက်ပါ!'); 
@@ -85,53 +86,46 @@ function spin() {
     isSpinning = true; spinBtn.disabled = true;
     credit -= BET; creditDisplay.textContent = credit; winDisplay.textContent = '0';
 
-    // STEP 1: ကြိုတွက်ထားတဲ့ Final Result ကို ရယူပါ
+    // STEP 1: Final Result ကို ကြိုတွက်ပါ
     generateGrid();
 
-    // STEP 2: Reel Animation အတွက် 15 Symbol ကို တည်ဆောက်ပါ
+    // STEP 2: အောက်ဆုံး 4 rows ကို Final Result အတိုင်း ရောက်အောင် Reel ကို ဖန်တီးပါ
     gridElement.innerHTML = '';
     
-    // ရပ်တဲ့အခါ ပေါ်မယ့် Symbol တွေကို သေချာ ထည့်သွင်းဖို့ stopIndices ကို သိမ်းထားပါမယ်
-    let finalStopIndices = [];
-
     for (let col = 0; col < REELS; col++) {
         const colDiv = document.createElement('div');
         colDiv.className = 'reel-column';
-        colDiv.style.transition = 'none'; // Initial setup, no transition
+        colDiv.style.transition = 'none'; 
         
-        let tallSymbols = [];
+        // STEP 2a: ဒီ Reel အတွက် အောက်ဆုံး 4 ခုကို Final Grid ကနေ ယူပါ
+        let finalSymbols = grid[col];
 
-        // 1 Reel အပေါ်ပိုင်း (Buffer) - ကျပန်း Symbol များ
-        for (let i = 0; i < 11; i++) { // 15 - 4 = 11 slots above
-            tallSymbols.push(randomSymbol());
-        }
-        // 2 အောက်ဆုံး 4 ခု - Final Grid ထဲက Symbol များ (Result)
-        for (let row = 0; row < ROWS; row++) {
-            tallSymbols.push(grid[col][row]);
+        // STEP 2b: အပေါ်ကို ဖြည့်မယ့် Buffer Symbol တွေ (8 ခု)
+        let bufferSymbols = [];
+        for (let i = 0; i < TALL_ROWS - ROWS; i++) {
+            bufferSymbols.push(randomSymbol());
         }
 
-        // 3 Offset တွက်ခြင်း - ရပ်တဲ့အခါ အောက်ဆုံး 4 ခု ပေါ်လာအောင်
-        // 11 slots above -> 11 * 25% = 275% up. 
-        // ဒါပေမယ့် Reel ကို Smooth ဖြစ်အောင် နည်းနည်း ပိုတင်ပြီး ကျစေမယ်
-        const stopIdx = Math.floor(Math.random() * 2) + 10; // 10 or 11 (Just above the 4 result slots)
-        finalStopIndices.push(stopIdx);
+        // STEP 2c: Reel ထဲကို ထည့်မယ့် Symbol စုစုပေါင်း (Buffer + Final)
+        let allSymbols = [...bufferSymbols, ...finalSymbols];
 
-        // 4 Column ထဲကို Symbol တွေ ထည့်ပါ
-        tallSymbols.forEach(sym => {
+        // STEP 2d: Cell တွေ ဆောက်မယ်
+        allSymbols.forEach(sym => {
             const cell = document.createElement('div');
             cell.className = 'cell';
             cell.style.backgroundImage = `url('images/${IMAGE_MAP[sym.id]}')`;
             colDiv.appendChild(cell);
         });
 
-        // 5 Initial Transform: Move UP by (stopIdx * 25%)
-        const offsetPercent = - (stopIdx * 25);
+        // STEP 2e: Offset တွက်မယ်။ Buffer 8 ခုကို ကျော်ပြီး Final 4 ခု ပေါ်လာအောင်
+        // Buffer 8 ခု = 8 * 25% = 200% ကို အပေါ်ကို တင်ထားမယ်။
+        const offsetPercent = - ((TALL_ROWS - ROWS) * 25);
         colDiv.style.transform = `translateY(${offsetPercent}%)`; 
 
         gridElement.appendChild(colDiv);
     }
 
-    // Force browser reflow
+    // Force reflow
     gridElement.offsetHeight;
 
     // STEP 3: Staggered Animation (Reel 1 to Reel 5)
@@ -148,7 +142,7 @@ function spin() {
         if (currentReel >= REELS) {
             clearInterval(animInterval);
             
-            // STEP 4: Animation ပြီးသွားရင် Final Grid ကို Highlight နဲ့ ပြသမယ်
+            // STEP 4: Animation ပြီးရင် Highlight ပြမယ်
             setTimeout(() => {
                 const result = calculateWin();
                 renderGrid(result.highlighted);
