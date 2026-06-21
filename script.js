@@ -1,14 +1,13 @@
-// American Buffalo Slot Machine - Pure Vanilla JS Implementation
-// Author: Senior Frontend Developer
-// Description: 5x4, 1024 ways, Free Spins, Wild, Scatter, Staggered Animation
+// American Buffalo Slot Machine - 4 Reels x 5 Rows Version
+// Pure Vanilla JS Implementation
 
 (function() {
     // ---------- CONSTANTS & DOM REFS ----------
-    const ROWS = 4;
-    const COLS = 5;
-    const TALL_ROWS = 12; // 8 buffer + 4 visible
-    const VISIBLE_HEIGHT_PERCENT = 100 / TALL_ROWS * ROWS; // 33.33%
-    const SYMBOL_SIZE_PERCENT = 100 / TALL_ROWS; // 8.33%
+    const ROWS = 5;          // Changed from 4 to 5
+    const COLS = 4;          // Changed from 5 to 4
+    const TALL_ROWS = 13;    // 8 buffer + 5 visible (8+5=13)
+    const SYMBOL_SIZE_PERCENT = 100 / TALL_ROWS;
+    const VISIBLE_HEIGHT_PERCENT = SYMBOL_SIZE_PERCENT * ROWS;
 
     // Symbols definition with base values
     const SYMBOLS = {
@@ -26,11 +25,9 @@
         scatter: { base: 0,  minCount: 0, isScatter: true }
     };
 
-    // Normal symbols list (for random generation)
     const NORMAL_SYMBOLS = ['buffalo', 'lion', 'elephant', 'deer', 'zebra', 'a', 'k', 'q', 'j', 'ten'];
-    const SPECIAL_SYMBOLS = ['wild', 'scatter'];
 
-    // Reel strips for weighted random (simplified, will use dynamic probability)
+    // Base weights for random generation
     const BASE_WEIGHTS = {
         buffalo: 8, lion: 8, elephant: 8, deer: 10, zebra: 10,
         a: 12, k: 12, q: 15, j: 15, ten: 20, wild: 5, scatter: 5
@@ -49,12 +46,12 @@
     // Game State
     let credits = 1000;
     let bet = 10;
-    let currentGrid = [];          // 5x4 final symbols
+    let currentGrid = [];          // 4x5 final symbols [col][row]
     let isSpinning = false;
     let freeSpinsRemaining = 0;
     let totalWin = 0;
     let animationTimeouts = [];
-    let currentReelStrips = [];    // 5 tall strips
+    let currentReelStrips = [];    // 4 tall strips
 
     // ---------- INITIALIZATION ----------
     function init() {
@@ -77,7 +74,7 @@
             innerDiv.className = 'reel-inner';
             innerDiv.id = `reel-inner-${c}`;
             
-            // Create 12 symbol cells (8 buffer + 4 visible)
+            // Create TALL_ROWS symbol cells (8 buffer + 5 visible = 13)
             for (let r = 0; r < TALL_ROWS; r++) {
                 const cell = document.createElement('div');
                 cell.className = 'symbol-cell';
@@ -97,7 +94,6 @@
             const colDiv = document.createElement('div');
             colDiv.className = 'highlight-column';
             colDiv.id = `highlight-col-${c}`;
-            // We'll create highlight cells dynamically when needed
             highlightsContainer.appendChild(colDiv);
         }
     }
@@ -115,11 +111,12 @@
 
     // ---------- REEL STRIP BUILDING ----------
     function buildTallStrip(finalGrid, colIndex) {
-        // Generate 8 random symbols for buffer + 4 from final grid
+        // Generate buffer symbols (TALL_ROWS - ROWS = 8 buffer)
         const strip = [];
         for (let i = 0; i < TALL_ROWS - ROWS; i++) {
             strip.push(getRandomSymbol(false));
         }
+        // Add final grid symbols for this column (ROWS = 5)
         for (let r = 0; r < ROWS; r++) {
             strip.push(finalGrid[colIndex][r]);
         }
@@ -181,12 +178,13 @@
             currentReelStrips[c] = strips[c];
             updateReelDOM(c, strips[c]);
             // Start position: hidden above (translateY negative)
+            // Buffer rows count = TALL_ROWS - ROWS = 8
             const startPercent = -1 * (SYMBOL_SIZE_PERCENT * (TALL_ROWS - ROWS));
             setReelPosition(c, startPercent);
         }
 
-        // Staggered drop with 200ms delay
-        const delays = [0, 200, 400, 600, 800];
+        // Staggered drop with 200ms delay (4 reels)
+        const delays = [0, 200, 400, 600];  // 4 delays for 4 reels
         const animationDuration = 800; // ms for each reel drop
 
         // Clear previous timeouts
@@ -207,23 +205,21 @@
                     const onTransitionEnd = () => {
                         inner.removeEventListener('transitionend', onTransitionEnd);
                         completedReels++;
-                        if (completedReels === 1) { // only last reel triggers
+                        if (completedReels === 1) {
                             // Animation complete
                             handleSpinComplete(finalGrid, isFreeSpinMode, callback);
                         }
                     };
                     inner.addEventListener('transitionend', onTransitionEnd);
-                } else {
-                    // For non-last reels, just count or rely on last reel
                 }
             }, delays[c]);
             animationTimeouts.push(timeoutId);
         }
     }
 
-    // ---------- WIN EVALUATION (1024 Ways) ----------
+    // ---------- WIN EVALUATION (1024 Ways with 4 columns) ----------
     function evaluateWins(grid) {
-        const wins = []; // { symbol, count, positions: [{col, row}], baseValue }
+        const wins = [];
         
         // Count scatters anywhere
         let scatterPositions = [];
@@ -240,11 +236,11 @@
                 symbol: 'scatter',
                 count: scatterPositions.length,
                 positions: scatterPositions,
-                baseValue: 0 // scatter uses special formula
+                baseValue: 0
             });
         }
 
-        // Evaluate normal symbols (including wild substitution) left to right
+        // Evaluate normal symbols left to right (4 columns)
         const normalSymbols = ['buffalo', 'lion', 'elephant', 'deer', 'zebra', 'a', 'k', 'q', 'j', 'ten'];
         
         for (const sym of normalSymbols) {
@@ -270,12 +266,9 @@
                 
                 if (colHasSymbol) {
                     consecutiveCount++;
-                    // Collect all positions from this column
                     positions.push(...colPositions);
                 } else {
-                    // Break if no symbol in this column (must be consecutive from reel 1)
                     if (consecutiveCount >= minCount) {
-                        // We have a valid combination up to previous column
                         break;
                     } else {
                         consecutiveCount = 0;
@@ -285,9 +278,7 @@
                 }
             }
             
-            // Check if we have enough consecutive reels
             if (consecutiveCount >= minCount) {
-                // Filter positions to only include up to consecutiveCount columns
                 const validPositions = positions.filter(p => p.col < consecutiveCount);
                 wins.push({
                     symbol: sym,
@@ -307,7 +298,6 @@
             if (win.symbol === 'scatter') {
                 total += win.count * 2;
             } else {
-                // Formula: (Count * Count * BaseValue) * 0.5
                 total += (win.count * win.count * win.baseValue) * 0.5;
             }
         }
@@ -323,7 +313,7 @@
                 const colDiv = document.getElementById(`highlight-col-${pos.col}`);
                 const cell = document.createElement('div');
                 cell.className = 'highlight-cell';
-                // Calculate top position based on row index
+                // Calculate top position based on row index (ROWS = 5)
                 const topPercent = pos.row * (100 / ROWS);
                 cell.style.top = `${topPercent}%`;
                 cell.style.height = `${100 / ROWS}%`;
@@ -350,7 +340,6 @@
             showHighlights(wins);
         }
         
-        // Handle scatter free spins trigger
         let newFreeSpins = 0;
         for (const win of wins) {
             if (win.symbol === 'scatter') {
@@ -360,14 +349,13 @@
             }
         }
         
-        // Update credits and free spins
         if (isFreeSpinMode) {
-            freeSpinsRemaining--; // consumed one free spin
+            freeSpinsRemaining--;
             if (newFreeSpins > 0) {
                 freeSpinsRemaining += newFreeSpins;
                 showPopup(`+${newFreeSpins} FREE SPINS!`);
             }
-            credits += winAmount; // winnings added
+            credits += winAmount;
         } else {
             credits -= bet;
             credits += winAmount;
@@ -379,19 +367,15 @@
         
         updateUI();
         
-        // Check if free spins continue
         if (freeSpinsRemaining > 0 && !isFreeSpinMode) {
-            // Start free spins sequence after a short delay
             setTimeout(() => {
                 startFreeSpins();
             }, 1500);
         } else if (freeSpinsRemaining > 0 && isFreeSpinMode) {
-            // Continue free spins
             setTimeout(() => {
                 executeFreeSpin();
             }, 1000);
         } else {
-            // End of spins
             isSpinning = false;
             spinButton.disabled = false;
             if (freeSpinsRemaining === 0 && isFreeSpinMode) {
@@ -423,18 +407,13 @@
         const finalGrid = generateRandomGrid(true);
         currentGrid = finalGrid;
         
-        animateReels(finalGrid, true, () => {
-            // Handled inside handleSpinComplete
-        });
+        animateReels(finalGrid, true, () => {});
     }
 
     // ---------- SPIN ACTION ----------
     function spin() {
         if (isSpinning) return;
-        if (freeSpinsRemaining > 0) {
-            // Should not happen, button disabled during free spins
-            return;
-        }
+        if (freeSpinsRemaining > 0) return;
         if (credits < bet) {
             showPopup("NOT ENOUGH CREDITS!");
             return;
@@ -446,7 +425,6 @@
         totalWin = 0;
         updateUI();
         
-        // Generate final grid (normal mode)
         const finalGrid = generateRandomGrid(false);
         currentGrid = finalGrid;
         
@@ -471,7 +449,6 @@
     // ---------- EVENT LISTENERS ----------
     spinButton.addEventListener('click', spin);
 
-    // Keyboard shortcut (spacebar)
     document.addEventListener('keydown', (e) => {
         if (e.code === 'Space' && !isSpinning) {
             e.preventDefault();
