@@ -13,7 +13,7 @@ const SYMBOLS = [
 ];
 
 const REELS = 5, ROWS = 4;
-const TALL_ROWS = 12; // Buffer 8 + Final 4
+const TALL_ROWS = 12; 
 const DELAY_BETWEEN_REELS = 200;
 
 let grid = [];
@@ -55,11 +55,16 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
+//  ဒီနေရာမှာ ပြင်ထားပါတယ်။
 function applyHighlights(highlighted) {
     const columns = gridElement.querySelectorAll('.reel-column');
+    
     highlighted.forEach(h => {
-        // Buffer 8 ခု ကျော်ပြီးမှ Final row တွေပေါ်မှာ highlight လုပ်မယ်
-        const targetCell = columns[h.col].children[(TALL_ROWS - ROWS) + h.row];
+        // Buffer (8 ခု) ကို ကျော်ပြီးမှ Final row တွေကို ရှာရမယ်
+        // ဒါကြောင့် index = (TALL_ROWS - ROWS) + h.row ဖြစ်ရမယ်
+        const targetIndex = (TALL_ROWS - ROWS) + h.row; 
+        const targetCell = columns[h.col].children[targetIndex];
+        
         if(targetCell) targetCell.classList.add('highlight');
     });
 }
@@ -76,10 +81,8 @@ function spin() {
     creditDisplay.textContent = credit; 
     winDisplay.textContent = '0';
 
-    // ၁။ Final Result ကို အရင်ဆုံး တွက်ထုတ်ထားလိုက်မယ်
     generateGrid();
 
-    // ၂။ Reel Column တွေကို ဆောက်လုပ်ခြင်း
     gridElement.innerHTML = '';
     
     for (let col = 0; col < REELS; col++) {
@@ -99,13 +102,11 @@ function spin() {
             colDiv.appendChild(cell);
         });
 
-        // Animation အတွက် အပေါ်မှာ ပုန်းထားမယ်
         colDiv.style.transition = 'none';
         colDiv.style.transform = `translateY(-${((TALL_ROWS - ROWS) / TALL_ROWS) * 100}%)`;
         gridElement.appendChild(colDiv);
     }
 
-    // ၃။ Staggered Animation စတင်ခြင်း
     requestAnimationFrame(() => {
         const columns = gridElement.querySelectorAll('.reel-column');
         columns.forEach((col, i) => {
@@ -116,7 +117,6 @@ function spin() {
         });
     });
 
-    // ၄။ အားလုံးရပ်သွားရင် Win စစ်ဆေးခြင်း
     setTimeout(() => {
         const result = calculateWin();
         applyHighlights(result.highlighted);
@@ -133,6 +133,4 @@ function spin() {
 
 // Initial Call
 generateGrid();
-// အစပိုင်းမှာ 4 row ပုံမှန်ပြသရန်အတွက် အတုအယောင် render လုပ်ပေးထားခြင်း
-// လိုအပ်ရင် အပေါ်က logic အတိုင်း ပြန်ရေးနိုင်ပါတယ်
 spinBtn.addEventListener('click', spin);
