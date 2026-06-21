@@ -55,16 +55,13 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
-//  ဒီနေရာမှာ ပြင်ထားပါတယ်။
+//  HIGHLIGHT FIX: အပေါ်ဆုံး ROWS မှာ ရှာမယ့်အစား အောက်ဆုံး 4 ခုကို ရှာမယ်
 function applyHighlights(highlighted) {
     const columns = gridElement.querySelectorAll('.reel-column');
     
     highlighted.forEach(h => {
-        // Buffer (8 ခု) ကို ကျော်ပြီးမှ Final row တွေကို ရှာရမယ်
-        // ဒါကြောင့် index = (TALL_ROWS - ROWS) + h.row ဖြစ်ရမယ်
-        const targetIndex = (TALL_ROWS - ROWS) + h.row; 
-        const targetCell = columns[h.col].children[targetIndex];
-        
+        // Column ရဲ့ အပေါ်ဆုံး 4 rows က Final Result ဖြစ်နေပြီ
+        const targetCell = columns[h.col].children[h.row];
         if(targetCell) targetCell.classList.add('highlight');
     });
 }
@@ -93,6 +90,8 @@ function spin() {
         let bufferSymbols = [];
         for (let i = 0; i < TALL_ROWS - ROWS; i++) bufferSymbols.push(randomSymbol());
 
+        // BUFFER ကို အပေါ်မှာ ထားပြီး FINAL ကို အောက်မှာ ထားမယ်
+        // အခု translateY(0) လုပ်လိုက်ရင် BUFFER 8 ခုက အပေါ်၊ FINAL 4 ခုက အောက် ရောက်သွားမယ်
         let allSymbols = [...bufferSymbols, ...finalSymbols];
 
         allSymbols.forEach(sym => {
@@ -102,6 +101,7 @@ function spin() {
             colDiv.appendChild(cell);
         });
 
+        // အပေါ်က 8 ခုကို ပြင်ထွက်အောင် translateY ချိန်မယ်
         colDiv.style.transition = 'none';
         colDiv.style.transform = `translateY(-${((TALL_ROWS - ROWS) / TALL_ROWS) * 100}%)`;
         gridElement.appendChild(colDiv);
