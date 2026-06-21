@@ -53,7 +53,7 @@ function generateGrid() {
     }
 }
 
-// Render using DIV + Background-Image (Keeps Quality)
+// Render using IMG tag for better compatibility
 function renderGrid(highlighted = []) {
     gridElement.innerHTML = '';
     for (let row = 0; row < ROWS; row++) {
@@ -62,8 +62,14 @@ function renderGrid(highlighted = []) {
             cell.className = 'cell';
             const sym = grid[col][row];
             
-            // Set background image (No img tag, keeps quality)
-            cell.style.backgroundImage = `url('images/${IMAGE_MAP[sym.id]}')`;
+            // Use IMG tag (more reliable for GitHub Pages)
+            const img = document.createElement('img');
+            img.src = `images/${IMAGE_MAP[sym.id]}`;
+            img.alt = sym.id;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain';
+            cell.appendChild(img);
 
             if (highlighted.some(h => h.col === col && h.row === row)) {
                 cell.classList.add('highlight');
@@ -107,7 +113,7 @@ function calculateWin() {
     return { totalWin, highlighted };
 }
 
-// ----- COLUMN-BY-COLUMN SPIN + BOUNCE (Background-Image Version) -----
+// ----- COLUMN-BY-COLUMN SPIN + BOUNCE -----
 function spin() {
     if (isSpinning) return;
     if (credit < BET) {
@@ -121,53 +127,51 @@ function spin() {
     creditDisplay.textContent = credit;
     winDisplay.textContent = '0';
 
-    // 1. Generate final result
     generateGrid();
     
-    // 2. Animate Reel 1 to Reel 5 (2 seconds total)
     let revealedCols = 0;
     const totalCols = REELS;
     
-    // Clear grid
     gridElement.innerHTML = '';
 
-    // Add empty placeholders initially
+    // Add empty placeholders
     for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < REELS; col++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
-            // Placeholder dark background
             cell.style.backgroundColor = '#2a1506';
-            cell.style.backgroundImage = 'none';
             gridElement.appendChild(cell);
         }
     }
 
     const stopInterval = setInterval(() => {
-        // Reveal current column (colIndex)
         const colIndex = revealedCols;
-        
         const allCells = gridElement.querySelectorAll('.cell');
+        
         for (let row = 0; row < ROWS; row++) {
             const index = row * REELS + colIndex;
             const cell = allCells[index];
             const sym = grid[colIndex][row];
             
-            // Set background image (High quality)
             cell.style.backgroundColor = '#fdf5e6';
-            cell.style.backgroundImage = `url('images/${IMAGE_MAP[sym.id]}')`;
+            cell.innerHTML = ''; // Clear placeholder
+            
+            const img = document.createElement('img');
+            img.src = `images/${IMAGE_MAP[sym.id]}`;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain';
+            cell.appendChild(img);
 
-            //  Apply BOUNCE effect
+            // Bounce effect
             cell.style.animation = 'none';
-            cell.offsetHeight; // Trigger reflow
+            cell.offsetHeight;
             cell.style.animation = `bounceIn 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards`;
         }
 
         revealedCols++;
         if (revealedCols >= totalCols) {
             clearInterval(stopInterval);
-            
-            // 3. Calculate & Show Win
             const result = calculateWin();
             renderGrid(result.highlighted); 
             
@@ -178,7 +182,6 @@ function spin() {
             } else {
                 winDisplay.textContent = '0';
             }
-            
             isSpinning = false;
             spinBtn.disabled = false;
         }
