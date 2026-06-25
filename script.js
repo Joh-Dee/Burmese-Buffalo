@@ -1,9 +1,9 @@
 (function() {
-    // ========== CONFIGURATION: 4 REELS x 5 ROWS ==========
-    const ROWS = 5;
-    const COLS = 4;
+    // ========== CONFIGURATION: 4 REELS (columns) x 5 ROWS ==========
+    const COLS = 4;    // 4 reels (columns)
+    const ROWS = 5;    // 5 rows visible
     const BUFFER_ROWS = 8;
-    const TALL_ROWS = BUFFER_ROWS + ROWS; // 13
+    const TALL_ROWS = BUFFER_ROWS + ROWS; // 13 total in strip
     
     const SYMBOLS = {
         buffalo:  { base: 10, minCount: 2 },
@@ -25,7 +25,6 @@
         a: 12, k: 12, q: 15, j: 15, ten: 20, wild: 5, scatter: 5
     };
 
-    // DOM elements
     const reelsContainer = document.getElementById('reels-container');
     const highlightsContainer = document.getElementById('highlights-container');
     const spinButton = document.getElementById('spin-button');
@@ -37,7 +36,7 @@
 
     let credits = 1000;
     let bet = 10;
-    let currentGrid = [];
+    let currentGrid = []; // [col][row] - 4 cols x 5 rows
     let isSpinning = false;
     let freeSpinsRemaining = 0;
     let totalWin = 0;
@@ -48,12 +47,15 @@
         createReelStructure();
         createHighlightsStructure();
         currentGrid = generateRandomGrid(false);
-        // Wait for layout then render
-        setTimeout(() => {
-            setCellDimensions();
-            renderInitialGrid();
-        }, 100);
         updateUI();
+        
+        // Wait for DOM to render, then set dimensions and render symbols
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setCellDimensions();
+                renderAllReels();
+            });
+        });
     }
 
     function createReelStructure() {
@@ -86,12 +88,15 @@
             const reelHeight = reel.clientHeight;
             if (reelHeight <= 0) return;
             
-            const cellHeight = reelHeight / ROWS;
+            // Each visible row takes 1/ROWS of the reel height
+            const cellHeight = Math.floor(reelHeight / ROWS);
             const cells = reel.querySelectorAll('.symbol-cell');
             cells.forEach(cell => {
                 cell.style.height = cellHeight + 'px';
+                cell.style.lineHeight = cellHeight + 'px';
             });
             
+            // Inner container total height
             const inner = reel.querySelector('.reel-inner');
             if (inner) {
                 inner.style.height = (cellHeight * TALL_ROWS) + 'px';
@@ -109,26 +114,38 @@
         }
     }
 
-    function renderInitialGrid() {
+    function renderAllReels() {
         for (let c = 0; c < COLS; c++) {
             const strip = buildTallStrip(currentGrid, c, false);
             updateReelDOM(c, strip);
-            // Set final position immediately
-            const targetPercent = -1 * (BUFFER_ROWS * 100 / ROWS);
-            setReelPosition(c, targetPercent);
+            // Set final position (buffer rows hidden above)
+            const cellHeight = getCellHeight();
+            if (cellHeight > 0) {
+                const translateY = -(BUFFER_ROWS * cellHeight);
+                setReelPosition(c, translateY);
+            }
         }
         clearHighlights();
     }
 
-    // Handle window resize
+    function getCellHeight() {
+        const reel = document.querySelector('.reel');
+        if (!reel) return 0;
+        return Math.floor(reel.clientHeight / ROWS);
+    }
+
+    // Handle resize
     window.addEventListener('resize', () => {
         setCellDimensions();
-        const targetPercent = -1 * (BUFFER_ROWS * 100 / ROWS);
-        for (let c = 0; c < COLS; c++) {
-            const inner = document.getElementById(`reel-inner-${c}`);
-            if (inner) {
-                inner.style.transition = 'none';
-                inner.style.transform = `translateY(${targetPercent}%)`;
+        const cellHeight = getCellHeight();
+        if (cellHeight > 0) {
+            const translateY = -(BUFFER_ROWS * cellHeight);
+            for (let c = 0; c < COLS; c++) {
+                const inner = document.getElementById(`reel-inner-${c}`);
+                if (inner) {
+                    inner.style.transition = 'none';
+                    inner.style.transform = `translateY(${translateY}px)`;
+                }
             }
         }
     });
@@ -136,9 +153,11 @@
     // ========== REEL STRIP BUILDING ==========
     function buildTallStrip(finalGrid, colIndex, isFreeSpin) {
         const strip = [];
+        // 8 buffer symbols
         for (let i = 0; i < BUFFER_ROWS; i++) {
             strip.push(getRandomSymbol(isFreeSpin));
         }
+        // 5 visible symbols from final grid
         for (let r = 0; r < ROWS; r++) {
             strip.push(finalGrid[colIndex][r]);
         }
@@ -183,27 +202,26 @@
         }
     }
 
-    function setReelPosition(colIndex, translateYPercent) {
+    function setReelPosition(colIndex, translateYPx) {
         const inner = document.getElementById(`reel-inner-${colIndex}`);
         if (!inner) return;
         inner.style.transition = 'none';
-        inner.style.transform = `translateY(${translateYPercent}%)`;
+        inner.style.transform = `translateY(${translateYPx}px)`;
     }
 
     // ========== ANIMATION ENGINE ==========
     function animateReels(finalGrid, isFreeSpinMode, callback) {
-        // Ensure cell dimensions are set
         setCellDimensions();
         
+        const cellHeight = getCellHeight();
         const strips = [];
-        const targetPercent = -1 * (BUFFER_ROWS * 100 / ROWS);
+        const targetY = -(BUFFER_ROWS * cellHeight); // Final position in pixels
+        const startY = targetY - (cellHeight * ROWS * 2); // Start well above
         
         for (let c = 0; c < COLS; c++) {
             strips.push(buildTallStrip(finalGrid, c, isFreeSpinMode));
             updateReelDOM(c, strips[c]);
-            // Start completely above the visible area
-            const startPercent = targetPercent - 120;
-            setReelPosition(c, startPercent);
+            setReelPosition(c, startY);
         }
 
         const delays = [0, 200, 400, 600];
@@ -218,11 +236,11 @@
                 if (!inner) return;
                 
                 // Force reflow
-                inner.offsetHeight;
+                void inner.offsetHeight;
                 
-                // Animate to target position
+                // Animate drop
                 inner.style.transition = `transform ${animationDuration}ms cubic-bezier(0.15, 0.9, 0.3, 1)`;
-                inner.style.transform = `translateY(${targetPercent}%)`;
+                inner.style.transform = `translateY(${targetY}px)`;
                 
                 if (c === COLS - 1) {
                     const onTransitionEnd = () => {
@@ -240,6 +258,7 @@
     function evaluateWins(grid) {
         const wins = [];
         
+        // Scatters anywhere
         let scatterPositions = [];
         for (let c = 0; c < COLS; c++) {
             for (let r = 0; r < ROWS; r++) {
@@ -257,6 +276,7 @@
             });
         }
 
+        // Normal symbols left to right
         const normalSymbols = ['buffalo', 'lion', 'elephant', 'deer', 'zebra', 'a', 'k', 'q', 'j', 'ten'];
         
         for (const sym of normalSymbols) {
@@ -316,8 +336,8 @@
         clearHighlights();
         const reelEl = document.querySelector('.reel');
         if (!reelEl) return;
-        const reelHeight = reelEl.clientHeight;
-        const cellHeight = reelHeight / ROWS;
+        const cellHeight = getCellHeight();
+        if (cellHeight <= 0) return;
         
         for (const win of wins) {
             for (const pos of win.positions) {
