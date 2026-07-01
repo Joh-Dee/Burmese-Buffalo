@@ -1,50 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="my">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>American Buffalo Slot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Buffalo Gold - Neon</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="game-container">
-        <div id="header">
-            <div class="title">BUFFALO</div>
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">BUFFALO</div>
             <div class="stats">
-                <div class="stat-box"><span class="label">CREDIT</span> <span id="credit-display">1000</span></div>
-                <div class="stat-box"><span class="label">WIN</span> <span id="win-display">0</span></div>
-                <div class="stat-box"><span class="label">FREE</span> <span id="free-display">0</span></div>
+                <div class="stat-box">
+                    <span class="label">CREDIT</span>
+                    <span class="value" id="creditDisplay">1276</span>
+                </div>
+                <div class="stat-box">
+                    <span class="label">WIN</span>
+                    <span class="value" id="winDisplay">46</span>
+                </div>
+                <div class="stat-box">
+                    <span class="label">FREE</span>
+                    <span class="value" id="freeSpinDisplay">0</span>
+                </div>
             </div>
         </div>
 
-        <div id="slot-machine">
-            <div id="reels-container">
-                <div class="reel" id="reel-0"></div>
-                <div class="reel" id="reel-1"></div>
-                <div class="reel" id="reel-2"></div>
-                <div class="reel" id="reel-3"></div>
+        <!-- Reels Wrapper -->
+        <div class="reels-wrapper">
+            <div id="slotGrid" class="slot-grid">
+                <!-- JS will inject cells here later -->
             </div>
-            <div id="highlights-container"></div>
         </div>
 
-        <div id="bottom-panel">
-            <div class="info-left">
-                <span class="badge">1024 WAYS</span>
+        <!-- Footer Controls -->
+        <div class="controls">
+            <div class="badge">1024 WAYS</div>
+            <div class="spin-area">
+                <button id="spinBtn" class="spin-btn">SPIN</button>
+                <div class="bet-label">BET: 10</div>
             </div>
-            <button id="spin-button" class="spin-btn">
-                <span class="btn-text">SPIN</span>
-                <span class="btn-sub">BET: 10</span>
-            </button>
-            <div class="info-right"></div>
         </div>
     </div>
-
-    <div id="win-popup" class="hidden">
-        <div class="popup-content">
-            <div id="popup-message"></div>
-        </div>
-    </div>
-
     <script src="script.js"></script>
 </body>
-    </html>
+</html>
