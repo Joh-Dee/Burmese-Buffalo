@@ -7,7 +7,7 @@
 }
 
 body {
-    background: #000;
+    background: #0a0a0a;
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -15,185 +15,171 @@ body {
     margin: 0;
 }
 
+.game-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1200px;
+}
+
 .game-container {
     width: 100%;
-    max-width: 480px;
-    padding: 20px;
+    max-width: 500px;
+    padding: 20px 15px;
     background: #0d0d0d;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 15px;
+    border-radius: 20px;
+    border: 1px solid #333;
+    box-shadow: 0 0 60px rgba(255, 215, 0, 0.1);
 }
 
-/* Header */
-.header {
-    width: 100%;
-    text-align: center;
-}
+/* --- HEADER --- */
+.header { width: 100%; text-align: center; }
 
 .logo {
-    font-size: 36px;
+    font-size: 32px;
     font-weight: 900;
     color: #ffd700;
-    text-shadow: 0 0 20px #ffd700, 0 0 40px #ffaa00;
-    letter-spacing: 4px;
-    margin-bottom: 15px;
+    text-shadow: 0 0 15px #ffd700;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
 }
 
 .stats {
     display: flex;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: center;
+    gap: 12px;
 }
 
 .stat-box {
-    flex: 1;
     background: #000;
-    border: 2px solid #ffd700;
+    border: 1px solid #444;
     border-radius: 8px;
-    padding: 8px 4px;
+    padding: 6px 12px;
+    min-width: 70px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3), inset 0 0 10px rgba(255, 215, 0, 0.1);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
 }
 
 .stat-box .label {
-    font-size: 10px;
-    color: #ffd700;
+    font-size: 9px;
+    color: #888;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin-bottom: 2px;
 }
 
 .stat-box .value {
     font-size: 18px;
     font-weight: bold;
-    color: #fff;
-    text-shadow: 0 0 10px #fff;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
-/* Reels Wrapper */
+/* --- REELS WRAPPER (Neon Line Background) --- */
 .reels-wrapper {
     width: 100%;
     background: #0d0d0d;
-    border: 2px solid #ffd700;
+    border: 1px solid #333;
     border-radius: 12px;
-    padding: 10px;
-    box-shadow: 0 0 30px rgba(255, 215, 0, 0.2), inset 0 0 20px rgba(255, 215, 0, 0.05);
+    padding: 8px;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
 }
 
-/* Grid */
+/* --- SLOT GRID (ပုံမှန်အခြေအနေ: မှိန်မှိန် Line နဲ့ ခြားထားတယ်) --- */
 .slot-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
+    gap: 4px; /* အတန်းကြား ပါးပါးလေး ခြားထားတယ် */
     background: transparent;
-    padding: 4px;
-    aspect-ratio: 5 / 4.4; /* 5 wide, ~4.4 high */
+    padding: 2px;
+    aspect-ratio: 5 / 4.4;
+    border: 1px solid rgba(255, 215, 0, 0.15); /* အလွန်မှိန်တဲ့ အပြင်ဘောင် */
 }
 
-/* Individual Cell */
+/* --- CELL (အရေးကြီးဆုံး ပြင်ချက်) --- */
 .cell {
-    background: transparent;
-    border: 3px solid #ffd700;
-    border-radius: 6px;
+    background: rgba(20, 15, 5, 0.6); /* Dark background for symbols */
+    border: 1px solid rgba(255, 215, 0, 0.25); /* မှိန်မှိန် ရွှေရောင် Line */
+    border-radius: 4px;
     aspect-ratio: 1 / 1.1;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 20px rgba(255, 215, 0, 0.4);
-    transition: all 0.2s ease;
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
 }
 
-/*  Image will be placed inside this cell later */
+/* Symbol Image */
 .cell img {
-    width: 100%;
-    height: 100%;
+    width: 85%;
+    height: 85%;
     object-fit: contain;
     display: block;
-    padding: 2px;
 }
 
-/* Highlight when winning */
+/*  WIN HIGHLIGHT (အနိုင်ရရင် ပုံထဲကလို အားကောင်းတဲ့ Golden Box) */
 .cell.highlight {
-    border: 4px solid #fff;
-    box-shadow: 0 0 40px #ffd700, 0 0 80px #ffaa00, inset 0 0 30px #ffd700;
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 30px #ffd700, inset 0 0 20px rgba(255, 215, 0, 0.4);
     transform: scale(1.05);
-    background: rgba(255, 215, 0, 0.2);
-    z-index: 2;
+    background: rgba(255, 215, 0, 0.15);
+    z-index: 5;
+    border-radius: 6px;
 }
 
-/* Footer Controls */
+/* --- CONTROLS --- */
 .controls {
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 10px;
+    padding: 0 5px;
 }
 
 .badge {
     background: #111;
-    border: 2px solid #ffd700;
+    border: 1px solid #333;
     padding: 8px 14px;
     border-radius: 30px;
     color: #ffd700;
     font-weight: bold;
-    font-size: 14px;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+    font-size: 13px;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
 }
 
-.spin-area {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
+.spin-area { display: flex; flex-direction: column; align-items: center; }
 
 .spin-btn {
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
     background: radial-gradient(circle, #ffd700, #e6a800);
-    border: 4px solid #fff;
+    border: 2px solid #fff;
     color: #000;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 900;
-    box-shadow: 0 0 40px #ffd700, 0 6px 0 #b8860b;
+    box-shadow: 0 0 30px #ffd700, 0 5px 0 #b8860b;
     cursor: pointer;
     transition: 0.08s linear;
-    text-shadow: 0 1px 0 #ffe082;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
+.spin-btn:active { transform: translateY(5px); box-shadow: 0 0 20px #ffd700, 0 2px 0 #b8860b; }
+.spin-btn:disabled { opacity: 0.5; transform: translateY(3px); box-shadow: 0 0 10px #ffd700, 0 2px 0 #b8860b; }
 
-.spin-btn:active {
-    transform: translateY(6px);
-    box-shadow: 0 0 30px #ffd700, 0 2px 0 #b8860b;
-}
+.bet-label { color: #888; font-size: 11px; font-weight: bold; margin-top: 5px; }
 
-.spin-btn:disabled {
-    opacity: 0.5;
-    transform: translateY(4px);
-    box-shadow: 0 0 20px #ffd700, 0 2px 0 #b8860b;
-    cursor: not-allowed;
-}
-
-.bet-label {
-    color: #ffd700;
-    font-size: 12px;
-    font-weight: bold;
-    margin-top: 6px;
-}
-
-/* Responsive Fixes */
+/* --- RESPONSIVE --- */
 @media (max-width: 450px) {
-    .game-container { max-width: 100%; padding: 12px; }
-    .logo { font-size: 28px; }
+    .game-container { padding: 12px; max-width: 100%; }
+    .logo { font-size: 24px; }
     .stat-box .value { font-size: 14px; }
     .spin-btn { width: 60px; height: 60px; font-size: 16px; }
-    .cell { border-width: 2px; }
-    }
+    .slot-grid { gap: 3px; }
+    .cell img { width: 80%; height: 80%; }
+}
